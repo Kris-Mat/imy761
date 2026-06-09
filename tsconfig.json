@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "emitDeclarationOnly":false,
+    "rewriteRelativeImportExtensions":true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@shared/*": ["./apps/shared/*"],
+      "@client/*": ["./apps/client/src/*"],
+      "@server/*": ["./apps/server/src/*"]
+    }
+  }
+}

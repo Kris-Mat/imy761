@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react';
+import reactLogo from './assets/react.svg';
+import viteLogo from './assets/vite.svg';
+import heroImg from './assets/hero.png';
+import './App.css';
 import type { User } from './api/models/user.model';
-import { userApi } from './api/services/users.api'
+import { userApi } from './api/services/users.api';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
   const [users, setUsers] = useState<User[] | null>([]);
 
   const fetchAPI = async () => {
     let response = null;
-     try {
+    try {
       response = await userApi.getUsers();
     } catch (error) {
       console.error("Error getting users:", error);
@@ -140,7 +140,7 @@ function App() {
       <div className="ticks"></div>
       <section id="spacer"></section>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

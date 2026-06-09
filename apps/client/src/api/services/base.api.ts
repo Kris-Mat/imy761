@@ -14,12 +14,14 @@ export class BaseApi {
     
     try {
       const response = await this.client.get(`${this.apiBase}/${path}`, {
-        params: queryParams,
+        params: queryParams
       });
       return response.data as T;
     } catch (error) {
-      console.error(`GET request failed: ${error}`);
-      throw new Error(`GET request failed: ${error}`);
+      console.error('GET request failed', error);
+      throw new Error('GET request failed:', {
+        cause: error
+      });
     }
   }
 
@@ -38,8 +40,10 @@ export class BaseApi {
       });
       return response.data as T;
     } catch (error) {
-      console.error(`POST request failed: ${error}`);
-      throw new Error(`POST request failed: ${error}`);
+      console.error('POST request failed', error);
+      throw new Error('POST request failed', {
+        cause: error
+      });
     }
   }
 
@@ -58,8 +62,10 @@ export class BaseApi {
       });
       return response.data as T;
     } catch (error) {
-      console.error(`PUT request failed: ${error}`);
-      throw new Error(`PUT request failed: ${error}`);
+      console.error('PUT request failed', error);
+      throw new Error('PUT request failed', {
+        cause: error
+      });
     }
   }
 }

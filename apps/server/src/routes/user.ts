@@ -1,6 +1,6 @@
 // routes/user.js
 
-const express = require('express');
+import express, { Request, Response }  from 'express';
 const router = express.Router();
 
 /**
@@ -13,8 +13,8 @@ const router = express.Router();
 *         description: A list of users
 */
 
-router.get('/users', (req, res) => {
-    res.status(200).json([{ name: 'John Doe' }, { name: 'Jane Doe' }]);
+router.get('/users', (req: Request, res: Response) => {
+  res.status(200).json([{ name: 'John Doe' }, { name: 'Jane Doe' }]);
 });
 
-module.exports = router;
+export default router;
