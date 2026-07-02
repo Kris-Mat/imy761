@@ -1,15 +1,21 @@
 {
   "name": "imy761",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": ["apps/*/*"],
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "dev:client": "npm run dev -w client",
-    "dev:server": "npm run dev -w server"
+    "dev:plain:client": "npm run dev -w plain-client",
+    "dev:plain:server": "npm run dev -w plain-server",
+    "dev:gamified:client": "npm run dev -w gamified-client",
+    "dev:gamified:server": "npm run dev -w gamified-server",
+    "dev:plain": "concurrently -n client,server -c blue,green \"npm:dev:plain:client\" \"npm:dev:plain:server\"",
+    "dev:gamified": "concurrently -n client,server -c blue,green \"npm:dev:gamified:client\" \"npm:dev:gamified:server\"",
+    "dev": "concurrently -n plain,gamified -c yellow,magenta \"npm:dev:plain\" \"npm:dev:gamified\""
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "4.2.0",
+    "concurrently": "^9.1.2",
     "@eslint/js": "^10.0.1",
     "@nabla/vite-plugin-eslint": "^3.0.1",
     "@typescript-eslint/eslint-plugin": "8.58.0",

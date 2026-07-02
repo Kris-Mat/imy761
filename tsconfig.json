@@ -12,8 +12,10 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@shared/*": ["./apps/shared/*"],
-      "@client/*": ["./apps/client/src/*"],
-      "@server/*": ["./apps/server/src/*"]
+      "@plain-client/*": ["./apps/plain/client/src/*"],
+      "@plain-server/*": ["./apps/plain/server/src/*"],
+      "@gamified-client/*": ["./apps/gamified/client/src/*"],
+      "@gamified-server/*": ["./apps/gamified/server/src/*"]
     }
   }
 }

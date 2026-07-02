@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "plain-server",
   "version": "1.0.0",
   "main": "server.ts",
   "scripts": {

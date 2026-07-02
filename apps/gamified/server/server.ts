@@ -9,7 +9,7 @@ import userRoutes from './src/routes/user.ts';
 
 const app: Application = express();
 
-dotenv.config({ path: path.resolve(__dirname) });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 const serverPort = process.env.PORT_SERVER || 3000;
 const clientPort = process.env.PORT_CLIENT;
 

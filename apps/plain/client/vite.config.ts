@@ -6,7 +6,7 @@ import eslint from "@nabla/vite-plugin-eslint";
 export default defineConfig({
   plugins: [react(), eslint()],
   server: {
-    port: 4000, 
+    port: 4001,
     strictPort: true
   }
 });
