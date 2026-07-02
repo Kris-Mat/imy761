@@ -4,8 +4,8 @@
   "main": "server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server",
-    "dev": "nodemon server"
+    "start": "tsx server.ts",
+    "dev": "nodemon --watch src --watch server.ts --ext ts --exec tsx server.ts"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +25,7 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "nodemon": "^3.1.14",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   }
 }
