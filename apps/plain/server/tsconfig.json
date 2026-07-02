@@ -1,13 +1,14 @@
 { 
   "extends": "../../../tsconfig.json", 
   "compilerOptions": { 
-    "lib": ["ES2023"], 
-    "types": ["node"], 
-    "outDir": "dist", 
-    "rootDir": "src" ,
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "noEmit": true,
     "emitDeclarationOnly":false,
     "rewriteRelativeImportExtensions":true,
     "allowImportingTsExtensions": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
   }, 
   "include": ["src"] 
 }

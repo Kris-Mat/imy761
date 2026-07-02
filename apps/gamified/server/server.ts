@@ -1,11 +1,9 @@
-// app.js
-import express, { Application } from 'express';
+import express, { Application, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
-import swaggerJSDoc from 'swagger-jsdoc';
 import cors from 'cors';
 import dotenv from "dotenv";
 import path from "path";
-import userRoutes from '@gamified-server/controllers/user';
+import { RegisterRoutes } from './src/swagger/routes';
 
 const app: Application = express();
 
@@ -19,39 +17,14 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Swagger definition
-const swaggerOptions = {
-  swaggerDefinition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'My API',
-      version: '1.0.0',
-      description: 'API documentation using Swagger'
-    },
-    servers: [
-      {
-        url: `http://localhost:${serverPort}`
-      }
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT' 
-        }
-      }
-    }
-  },
-  apis: ['./routes/*.js'] // Path to your API docs
-};
+// 1. Serve the freshly generated Swagger UI spec file
+app.use('/docs', swaggerUi.serve, async (_req: Request, res: Response) => {
+  const swaggerDocument = await import('./src/swagger/swagger.json');
+  return res.send(swaggerUi.generateHTML(swaggerDocument));
+});
 
-// using the routes in the app 
-const swaggerDocs = swaggerJSDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-app.use('/api', userRoutes);
-
+// 2. Register the tsoa engine routes
+RegisterRoutes(app); 
 
 // starting the server
 app.listen(serverPort, () => {

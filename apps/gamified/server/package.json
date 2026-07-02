@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx server.ts",
-    "dev": "nodemon --watch src --watch server.ts --ext ts --exec tsx server.ts"
+    "dev": "nodemon --watch src --watch server.ts --ignore \"src/swagger/**\" --ext ts --exec \"tsoa spec-and-routes && tsx server.ts\""
   },
   "keywords": [],
   "author": "",
@@ -16,7 +16,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "swagger-jsdoc": "^6.3.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "tsoa": "^7.0.0-alpha.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

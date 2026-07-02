@@ -1,0 +1,19 @@
+{
+  "entryFile": "server.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["src/controllers/**/*Controller.ts"],
+  "compilerOptions": {
+    "paths": {
+      "@shared/*": ["../../shared/*"]
+    },
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "spec": {
+    "outputDirectory": "src/swagger",
+    "specVersion": 3
+  },
+  "routes": {
+    "routesDir": "src/swagger"
+  }
+}
