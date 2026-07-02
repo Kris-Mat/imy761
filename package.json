@@ -11,7 +11,12 @@
     "dev:gamified:server": "npm run dev -w gamified-server",
     "dev:plain": "concurrently -n client,server -c blue,green \"npm:dev:plain:client\" \"npm:dev:plain:server\"",
     "dev:gamified": "concurrently -n client,server -c blue,green \"npm:dev:gamified:client\" \"npm:dev:gamified:server\"",
-    "dev": "concurrently -n plain,gamified -c yellow,magenta \"npm:dev:plain\" \"npm:dev:gamified\""
+    "dev": "concurrently -n plain,gamified -c yellow,magenta \"npm:dev:plain\" \"npm:dev:gamified\"",
+    "build:plain:client": "npm run build -w plain-client",
+    "build:gamified:client": "npm run build -w gamified-client",
+    "typecheck:plain:server": "tsc --noEmit -p apps/plain/server/tsconfig.json",
+    "typecheck:gamified:server": "tsc --noEmit -p apps/gamified/server/tsconfig.json",
+    "build": "npm run build:plain:client && npm run build:gamified:client && npm run typecheck:plain:server && npm run typecheck:gamified:server"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "4.2.0",
