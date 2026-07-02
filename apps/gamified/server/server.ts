@@ -5,7 +5,7 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import cors from 'cors';
 import dotenv from "dotenv";
 import path from "path";
-import userRoutes from './src/routes/user.ts';
+import userRoutes from '@gamified-server/routes/user';
 
 const app: Application = express();
 
