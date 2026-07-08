@@ -1,0 +1,41 @@
+type User @table {
+  email: String!
+  role: String!
+  displayName: String
+  institutionName: String
+}
+
+type SoilHorizon @table {
+  name: String!
+  description: String!
+  primaryCharacteristics: String!
+  imageUrl: String
+}
+
+type ClassificationSystem @table {
+  systemName: String!
+  description: String!
+  documentationUrl: String
+}
+
+type Quiz @table {
+  title: String!
+  difficultyLevel: Int!
+  creator: User!
+}
+
+type FieldEntry @table {
+  dateObserved: Date!
+  latitude: Float
+  longitude: Float
+  notes: String
+  imageUrl: String
+  user: User!
+  horizonDetected: SoilHorizon!
+}
+
+type QuizQuestion @table {
+  imageUrl: String!
+  quiz: Quiz!
+  correctAnswer: SoilHorizon!
+}

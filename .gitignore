@@ -6,3 +6,16 @@ node_modules
 .env
 
 claude.md
+
+
+# Firebase logging files
+dataconnect/.dataconnect
+.firebase
+dataconnect-debug.log
+firebase-debug.log
+pglite-debug.log
+src/dataconnect-generated
+
+
+#repomix files
+repomix-output.xml
