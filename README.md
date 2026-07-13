@@ -97,6 +97,62 @@ One flat ESLint config (`eslint.config.js`) covers both apps. Notable convention
 - `camelCase`/`PascalCase`/`UPPER_CASE` naming; classes/interfaces/types must be `PascalCase`.
 - `prefer-const` enforced.
 
+## Firebase Data Connect
+
+The database schema and generated client SDK are managed through Firebase Data Connect, config lives under `dataconnect/`.
+
+**Key facts:**
+
+| | |
+|---|---|
+| Firebase project | `imy761-b36eb` (aliased as `imy761-dev`, see `.firebaserc`) |
+| Cloud SQL instance | `imy761-fdc` (`us-east4`) |
+| Postgres database | `fdcdb` |
+| Connector | `users` (`dataconnect/users/`) |
+| Schema source | `dataconnect/schema/schema.gql` |
+| Generated client SDK | `src/dataconnect-generated` — **gitignored, never edit by hand**, regenerate it instead (see below) |
+
+One-time setup:
+
+```
+npm install -g firebase-tools
+firebase login
+firebase use imy761-dev
+```
+
+**After changing the schema and data** (`dataconnect/schema/schema.gql`) — updates the Postgres tables:
+
+```
+rm -rf dataconnect/.dataconnect/pgliteData
+firebase dataconnect:sql:diff       # preview the SQL migration Data Connect would run
+firebase dataconnect:sql:migrate    # apply it to Cloud SQL
+```
+
+**After changing operations** (queries/mutations in `dataconnect/users/*.gql`) — regenerates the typed client SDK in `src/dataconnect-generated`:
+
+```
+firebase dataconnect:sdk:generate
+```
+
+**Local development** (runs Data Connect against a local Postgres emulator instead of Cloud SQL, data persisted to `dataconnect/.dataconnect/`, gitignored):
+
+```
+firebase emulators:start --only dataconnect
+```
+
+**Deploying** schema + connector to the `imy761-dev` project:
+
+```
+firebase deploy --only dataconnect
+```
+
+- firebase dataconnect:sql:migrate — syncs the underlying Postgres schema with schema.gql. Ran first to check whether adding firstName/lastName needed a DB-level change (it reported already up to date — this step alone does not update the GraphQL service).
+- firebase deploy --only dataconnect — deploys the actual Data Connect GraphQL service schema and connector. This is the step that made firstName/lastName (and later, the @auth level change) take effect — sql:migrate doesn't touch this. Needed to run this again after editing @auth(level: PUBLIC) → @auth(level: NO_ACCESS) on the SeedUsers mutation.
+- firebase dataconnect:execute dataconnect/users/seed_users.gql — runs the seed mutation against the deployed Data Connect service to actually insert the seed users. Ran this after each schema/connector change and each time a new user was added to the mutation.
+
+Rule of thumb to document alongside this: any time dataconnect/schema/schema.gql or the @auth level in a connector .gql file changes, firebase deploy --only dataconnect must run before firebase dataconnect:execute — otherwise the deployed service still validates against the old shape/rules.
+
+
 ## Branching
 
 Branch names should include the developer's name so changes are easy to attribute, in the form:

@@ -1,8 +1,7 @@
 type User @table {
-  email: String!
-  role: String!
-  displayName: String
-  institutionName: String
+  email: String! @unique
+  firstName: String!
+  lastName: String!
 }
 
 type SoilHorizon @table {
