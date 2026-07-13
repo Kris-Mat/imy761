@@ -15,7 +15,10 @@ const models: TsoaRoute.Models = {
     "User": {
         "dataType": "refObject",
         "properties": {
-            "name": {"dataType":"string","required":true},
+            "id": {"dataType":"string","required":true},
+            "email": {"dataType":"string","required":true},
+            "firstName": {"dataType":"string","required":true},
+            "lastName": {"dataType":"string","required":true},
         },
         "additionalProperties": false,
     },

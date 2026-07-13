@@ -7,7 +7,7 @@ import stylistic from "@stylistic/eslint-plugin";
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['**/dist', 'src/dataconnect-generated', 'src/dataconnect-generated-admin']),
   {
     files: ['**/*.{ts,tsx,js}'],
     extends: [

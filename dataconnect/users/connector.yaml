@@ -7,3 +7,7 @@ generate:
       react: false
       angular: false
       clientCache: {}
+  adminNodeSdk:
+    outputDir: ..\..\src\dataconnect-generated-admin
+    package: "@dataconnect/admin-generated"
+    packageJsonDir: ..\..

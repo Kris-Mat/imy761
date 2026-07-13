@@ -37,6 +37,7 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
+    "@dataconnect/admin-generated": "file:src/dataconnect-generated-admin",
     "@dataconnect/generated": "file:src/dataconnect-generated"
   }
 }

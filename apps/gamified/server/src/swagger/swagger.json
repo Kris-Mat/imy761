@@ -9,12 +9,24 @@
 		"schemas": {
 			"User": {
 				"properties": {
-					"name": {
+					"id": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"firstName": {
+						"type": "string"
+					},
+					"lastName": {
 						"type": "string"
 					}
 				},
 				"required": [
-					"name"
+					"id",
+					"email",
+					"firstName",
+					"lastName"
 				],
 				"type": "object",
 				"additionalProperties": false
