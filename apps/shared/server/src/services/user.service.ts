@@ -1,4 +1,4 @@
-import { userRepository } from '@gamified-server/repositories/user.repository';
+import { userRepository } from '../repositories/user.repository';
 import type { User } from '@shared/api/models/user.model';
 
 export class UserService {

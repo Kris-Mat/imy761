@@ -1,5 +1,5 @@
 import { getUsers } from '@dataconnect/admin-generated';
-import { getDataConnectClient } from '@gamified-server/config/dataconnect';
+import { getDataConnectClient } from '../config/dataconnect';
 import type { User } from '@shared/api/models/user.model';
 
 export class UserRepository {
