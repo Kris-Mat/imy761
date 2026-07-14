@@ -1,0 +1,22 @@
+name: Check PR Source Branch
+
+on:
+  pull_request:
+    branches:
+      - main  # The target branch you want to protect
+
+jobs:
+  validate-main-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify allowed source branch
+        run: |
+          ALLOWED_SOURCE="dev"
+          ACTUAL_SOURCE="${{ github.head_ref }}"
+          
+          if [ "$ACTUAL_SOURCE" != "$ALLOWED_SOURCE" ]; then
+            echo "ERROR: Merges into 'main' are only allowed from '$ALLOWED_SOURCE'."
+            echo "Your source branch is '$ACTUAL_SOURCE'."
+            exit 1
+          fi
+          echo "Branch validation passed!"
