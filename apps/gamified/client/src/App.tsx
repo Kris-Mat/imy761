@@ -46,9 +46,9 @@ function App() {
         >
           Count is {count}
         </button>
-        {users?.map((user, index) => (
-          <div key={index}>
-            <p>{user.name}</p>
+        {users?.map((user) => (
+          <div key={user.id}>
+            <p>{user.firstName} {user.lastName}</p>
             <br></br>
           </div>
         ))}

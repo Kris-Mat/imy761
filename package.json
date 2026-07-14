@@ -1,7 +1,9 @@
 {
   "name": "imy761",
   "private": true,
-  "workspaces": ["apps/*/*"],
+  "workspaces": [
+    "apps/*/*"
+  ],
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -16,22 +18,27 @@
     "build:gamified:client": "npm run build -w gamified-client",
     "typecheck:plain:server": "tsc --noEmit -p apps/plain/server/tsconfig.json",
     "typecheck:gamified:server": "tsc --noEmit -p apps/gamified/server/tsconfig.json",
-    "build": "npm run build:plain:client && npm run build:gamified:client && npm run typecheck:plain:server && npm run typecheck:gamified:server"
+    "typecheck:shared:server": "tsc --noEmit -p apps/shared/server/tsconfig.json",
+    "build": "npm run build:plain:client && npm run build:gamified:client && npm run typecheck:shared:server && npm run typecheck:plain:server && npm run typecheck:gamified:server"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "4.2.0",
-    "concurrently": "^9.1.2",
     "@eslint/js": "^10.0.1",
     "@nabla/vite-plugin-eslint": "^3.0.1",
+    "@stylistic/eslint-plugin": "4.2.0",
     "@typescript-eslint/eslint-plugin": "8.58.0",
     "@typescript-eslint/parser": "8.58.0",
+    "concurrently": "^9.1.2",
     "eslint": "^10.4.1",
+    "eslint-import-resolver-typescript": "4.4.4",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
-    "eslint-import-resolver-typescript": "4.4.4",
     "globals": "^17.6.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.61.0",
     "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "@dataconnect/admin-generated": "file:src/dataconnect-generated-admin",
+    "@dataconnect/generated": "file:src/dataconnect-generated"
   }
 }
