@@ -178,3 +178,28 @@ Open a PR into `dev` when a branch is ready for review; avoid pushing directly t
 
 - There is no test suite configured yet — `apps/*/server`'s `test` script is a placeholder that exits with an error.
 - `apps/shared` is intentionally free of framework-specific code — keep it limited to types, API clients, and pure utilities that both `plain` and `gamified` can consume.
+
+
+
+
+
+# Quick setup guide
+
+
+Here's a short setup runbook for a teammate cloning this fresh:
+
+1. Install prerequisites: Node.js (matching @types/node ~v25), then npm install -g firebase-tools.
+2. Clone and install: git clone ... then npm install from the repo root (installs all 5 workspaces: 2 clients, 2 servers, shared-server).
+3. Firebase login and project link: firebase login, then confirm firebase use shows imy761-dev (from .firebaserc, project imy761-b36eb).
+4. Create the .env files (all four are gitignored, so a fresh clone has none — create these by hand):
+  - apps/gamified/server/.env and apps/plain/server/.env, each with:
+PORT_SERVER="3002"   # 3001 for plain
+PORT_CLIENT="4002"   # 4001 for plain
+DATA_CONNECT_EMULATOR_HOST="127.0.0.1:9399"
+FIREBASE_PROJECT_ID="imy761-b36eb"
+  - apps/gamified/client/.env and apps/plain/client/.env, ea
+VITE_PORT_CLIENT=4002   # 4001 for plain                                                                                                         VITE_PORT_SERVER=3002   # 3001 for plain
+VITE_API_BASE_URL="http://localhost:3002"   # 3001 for plain                                                                                     5. Start the Data Connect emulator (separate terminal, leave:start --only dataconnect.
+6. Seed test data into the emulator (separate terminal, one-time or whenever the DB is empty): FIREBASE_DATACONNECT_EMULATOR_HOST=127.0.0.1:9399 firebase dataconnect:execute dataconnect/users/seed_users.gqrrors on repeat runs, that's fine.
+7. Run an app (from repo root): npm run dev:gamified (or dev:plain, or npm run dev for both) — starts client + server together.
+8. Open the browser: http://localhost:4002 (gamified) or httshould show the seeded users rendered on the page.
