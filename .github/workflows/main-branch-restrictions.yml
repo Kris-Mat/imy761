@@ -5,15 +5,18 @@ on:
     branches:
       - main
 
+permissions: {}
+
 jobs:
   validate-main-source:
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Verify allowed source branch
+        env:
+          ALLOWED_SOURCE: dev
+          ACTUAL_SOURCE: ${{ github.head_ref }}
         run: |
-          ALLOWED_SOURCE="dev"
-          ACTUAL_SOURCE="${{ github.head_ref }}"
-          
           if [ "$ACTUAL_SOURCE" != "$ALLOWED_SOURCE" ]; then
             echo "ERROR: Merges into 'main' are only allowed from '$ALLOWED_SOURCE'."
             echo "Your source branch is '$ACTUAL_SOURCE'."
