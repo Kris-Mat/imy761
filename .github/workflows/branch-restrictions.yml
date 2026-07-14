@@ -3,7 +3,7 @@ name: Check PR Source Branch
 on:
   pull_request:
     branches:
-      - main  # The target branch you want to protect
+      - main
 
 jobs:
   validate-main-source:
