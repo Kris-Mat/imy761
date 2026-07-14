@@ -14,8 +14,6 @@ dataconnect/.dataconnect
 dataconnect-debug.log
 firebase-debug.log
 pglite-debug.log
-src/dataconnect-generated
-src/dataconnect-generated-admin
 
 
 #repomix files
