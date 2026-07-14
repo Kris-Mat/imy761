@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
-import heroImg from './assets/hero.png';
+import heroImg from './assets/hero.png'
 import './App.css';
-import type { User } from '@shared/api/models/user.model';
-import { userApi } from '@shared/api/services/users.api';
+import type { User } from '@shared/api/models/user.model'
+import { userApi } from '@shared/api/services/users.api'
 
 function App() {
   const [count, setCount] = useState(0);
