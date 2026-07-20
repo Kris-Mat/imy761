@@ -1,12 +1,10 @@
-import { getUsers } from '@dataconnect/admin-generated';
-import { getDataConnectClient } from '../config/dataconnect';
+import { getPrismaClient } from '../config/prisma';
 import type { User } from '@shared/api/models/user.model';
 
 export class UserRepository {
 
   public async findAll(): Promise<User[]> {
-    const { data } = await getUsers(getDataConnectClient());
-    return data.users;
+    return getPrismaClient().user.findMany();
   }
 
 }

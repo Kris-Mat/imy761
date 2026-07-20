@@ -97,60 +97,58 @@ One flat ESLint config (`eslint.config.js`) covers both apps. Notable convention
 - `camelCase`/`PascalCase`/`UPPER_CASE` naming; classes/interfaces/types must be `PascalCase`.
 - `prefer-const` enforced.
 
-## Firebase Data Connect
+## Database (Postgres + Prisma)
 
-The database schema and generated client SDK are managed through Firebase Data Connect, config lives under `dataconnect/`.
+The database schema, migrations, and generated client live under `apps/shared/server/prisma/`, shared by both apps since they read/write the same database.
 
 **Key facts:**
 
 | | |
 |---|---|
-| Firebase project | `imy761-b36eb` (aliased as `imy761-dev`, see `.firebaserc`) |
-| Cloud SQL instance | `imy761-fdc` (`us-east4`) |
-| Postgres database | `fdcdb` |
-| Connector | `users` (`dataconnect/users/`) |
-| Schema source | `dataconnect/schema/schema.gql` |
-| Generated client SDK | `src/dataconnect-generated` — **gitignored, never edit by hand**, regenerate it instead (see below) |
+| Local database | Postgres 17 via `docker-compose.yml` (`localhost:5432`, db `imy761`) |
+| Schema source | `apps/shared/server/prisma/schema.prisma` |
+| Migrations | `apps/shared/server/prisma/migrations/` (committed to git) |
+| Seed script | `apps/shared/server/prisma/seed.ts` |
+| Generated client | `@prisma/client`, generated into `node_modules` — **gitignored, never edit by hand**, regenerate with `npm run db:generate` |
 
 One-time setup:
 
 ```
-npm install -g firebase-tools
-firebase login
-firebase use imy761-dev
+npm install
+docker compose up -d          # starts local Postgres
+npm run db:migrate            # creates tables from schema.prisma
+npm run db:seed               # inserts the seed users
 ```
 
-**After changing the schema and data** (`dataconnect/schema/schema.gql`) — updates the Postgres tables:
-
 ```
-rm -rf dataconnect/.dataconnect/pgliteData
-firebase dataconnect:sql:diff       # preview the SQL migration Data Connect would run
-firebase dataconnect:sql:migrate    # apply it to Cloud SQL
+docker compose down           # to stop the docker container
 ```
 
-**After changing operations** (queries/mutations in `dataconnect/users/*.gql`) — regenerates the typed client SDK in `src/dataconnect-generated`:
+**After changing the schema** (`apps/shared/server/prisma/schema.prisma`) — creates a new migration file and applies it locally:
 
 ```
-firebase dataconnect:sdk:generate
+npm run db:migrate
 ```
 
-**Local development** (runs Data Connect against a local Postgres emulator instead of Cloud SQL, data persisted to `dataconnect/.dataconnect/`, gitignored):
+**Regenerating the typed client** (usually automatic after `db:migrate`, but needed after pulling schema changes without a new migration):
 
 ```
-firebase emulators:start --only dataconnect
+npm run db:generate
 ```
 
-**Deploying** schema + connector to the `imy761-dev` project:
+**Inspecting the database** (opens a browser-based data browser against whichever `DATABASE_URL` is active):
 
 ```
-firebase deploy --only dataconnect
+npm run db:studio
 ```
 
-- firebase dataconnect:sql:migrate — syncs the underlying Postgres schema with schema.gql. Ran first to check whether adding firstName/lastName needed a DB-level change (it reported already up to date — this step alone does not update the GraphQL service).
-- firebase deploy --only dataconnect — deploys the actual Data Connect GraphQL service schema and connector. This is the step that made firstName/lastName (and later, the @auth level change) take effect — sql:migrate doesn't touch this. Needed to run this again after editing @auth(level: PUBLIC) → @auth(level: NO_ACCESS) on the SeedUsers mutation.
-- firebase dataconnect:execute dataconnect/users/seed_users.gql — runs the seed mutation against the deployed Data Connect service to actually insert the seed users. Ran this after each schema/connector change and each time a new user was added to the mutation.
+**Deploying** — applies committed migrations to a target database (e.g. a hosted Postgres instance) without generating new ones, which is what you'd run in CI/production:
 
-Rule of thumb to document alongside this: any time dataconnect/schema/schema.gql or the @auth level in a connector .gql file changes, firebase deploy --only dataconnect must run before firebase dataconnect:execute — otherwise the deployed service still validates against the old shape/rules.
+```
+npm run db:deploy
+```
+
+Rule of thumb: `db:migrate` is for local development (it also generates the migration file); `db:deploy` is for applying already-committed migrations to another environment. Never run `db:migrate` against a shared/production database.
 
 
 ## Branching
@@ -185,21 +183,25 @@ Open a PR into `dev` when a branch is ready for review; avoid pushing directly t
 
 # Quick setup guide
 
-
 Here's a short setup runbook for a teammate cloning this fresh:
 
-1. Install prerequisites: Node.js (matching @types/node ~v25), then npm install -g firebase-tools.
-2. Clone and install: git clone ... then npm install from the repo root (installs all 5 workspaces: 2 clients, 2 servers, shared-server).
-3. Firebase login and project link: firebase login, then confirm firebase use shows imy761-dev (from .firebaserc, project imy761-b36eb).
-4. Create the .env files (all four are gitignored, so a fresh clone has none — create these by hand):
-  - apps/gamified/server/.env and apps/plain/server/.env, each with:
-PORT_SERVER="3002"   # 3001 for plain
-PORT_CLIENT="4002"   # 4001 for plain
-DATA_CONNECT_EMULATOR_HOST="127.0.0.1:9399"
-FIREBASE_PROJECT_ID="imy761-b36eb"
-  - apps/gamified/client/.env and apps/plain/client/.env, ea
-VITE_PORT_CLIENT=4002   # 4001 for plain                                                                                                         VITE_PORT_SERVER=3002   # 3001 for plain
-VITE_API_BASE_URL="http://localhost:3002"   # 3001 for plain                                                                                     5. Start the Data Connect emulator (separate terminal, leave:start --only dataconnect.
-6. Seed test data into the emulator (separate terminal, one-time or whenever the DB is empty): FIREBASE_DATACONNECT_EMULATOR_HOST=127.0.0.1:9399 firebase dataconnect:execute dataconnect/users/seed_users.gqrrors on repeat runs, that's fine.
-7. Run an app (from repo root): npm run dev:gamified (or dev:plain, or npm run dev for both) — starts client + server together.
-8. Open the browser: http://localhost:4002 (gamified) or httshould show the seeded users rendered on the page.
+1. Install prerequisites: Node.js (matching @types/node ~v25) and Docker Desktop (for local Postgres).
+2. Clone and install: `git clone ...` then `npm install` from the repo root (installs all 5 workspaces: 2 clients, 2 servers, shared-server).
+3. Create the `.env` files (all gitignored, so a fresh clone has none — copy each `.env.example` to `.env`):
+   - `apps/gamified/server/.env` and `apps/plain/server/.env`, each with:
+     ```
+     PORT_SERVER="3002"   # 3001 for plain
+     PORT_CLIENT="4002"   # 4001 for plain
+     DATABASE_URL="postgresql://postgres:postgres@localhost:5432/imy761?schema=public"
+     ```
+   - `apps/shared/server/.env` — same `DATABASE_URL`, used by the Prisma CLI.
+   - `apps/gamified/client/.env` and `apps/plain/client/.env`, each with:
+     ```
+     VITE_PORT_CLIENT=4002   # 4001 for plain
+     VITE_PORT_SERVER=3002   # 3001 for plain
+     VITE_API_BASE_URL="http://localhost:3002"   # 3001 for plain
+     ```
+4. Start Postgres: `docker compose up -d` (leave it running in the background).
+5. Apply migrations and seed data (one-time, or whenever the DB is reset): `npm run db:migrate` then `npm run db:seed`.
+6. Run an app (from repo root): `npm run dev:gamified` (or `dev:plain`, or `npm run dev` for both) — starts client + server together.
+7. Open the browser: `http://localhost:4002` (gamified) or `http://localhost:4001` (plain) — should show the seeded users rendered on the page.

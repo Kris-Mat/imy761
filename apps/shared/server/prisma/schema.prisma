@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+
+  quizzesCreated Quiz[]
+  fieldEntries   FieldEntry[]
+}
+
+model SoilHorizon {
+  id                     String  @id @default(uuid())
+  name                   String
+  description            String
+  primaryCharacteristics String
+  imageUrl               String?
+
+  fieldEntries  FieldEntry[]
+  quizQuestions QuizQuestion[]
+}
+
+model ClassificationSystem {
+  id                String  @id @default(uuid())
+  systemName        String
+  description       String
+  documentationUrl  String?
+}
+
+model Quiz {
+  id              String @id @default(uuid())
+  title           String
+  difficultyLevel Int
+
+  creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String
+
+  questions QuizQuestion[]
+}
+
+model FieldEntry {
+  id            String    @id @default(uuid())
+  dateObserved  DateTime
+  latitude      Float?
+  longitude     Float?
+  notes         String?
+  imageUrl      String?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  horizonDetected   SoilHorizon @relation(fields: [horizonDetectedId], references: [id])
+  horizonDetectedId String
+}
+
+model QuizQuestion {
+  id       String @id @default(uuid())
+  imageUrl String
+
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+  quizId String
+
+  correctAnswer   SoilHorizon @relation(fields: [correctAnswerId], references: [id])
+  correctAnswerId String
+}
