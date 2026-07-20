@@ -4,6 +4,7 @@
   "workspaces": [
     "apps/*/*"
   ],
+  "type": "module",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
