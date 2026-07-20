@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int    @id @default(autoincrement())
+  username  String
+  email     String @unique
+  firstName String
+  lastName  String
+
+  gameStat     UserGameStat?
+  attempts     UserAttempt[]
+  achievements UserAchievement[]
+}
+
+model Monolith {
+  id            Int    @id @default(autoincrement())
+  name          String
+  modelUrl      String
+  finalSoilForm String
+
+  horizons  Horizon[]
+  questions Question[]
+}
+
+model Horizon {
+  id              Int    @id @default(autoincrement())
+  depthTopMm      Int
+  depthBottomMm   Int
+  correctHue      String
+  correctValue    Int
+  correctChroma   Int
+
+  monolith   Monolith @relation(fields: [monolithId], references: [id])
+  monolithId Int
+
+  diagRef   DiagnosticHorizonRef @relation(fields: [diagRefId], references: [id])
+  diagRefId Int
+}
+
+model DiagnosticHorizonRef {
+  id               Int    @id @default(autoincrement())
+  name             String
+  category         String
+  criticalConcepts String
+
+  horizons       Horizon[]
+  ecosystemRefs  EcosystemRef[]
+}
+
+model EcosystemRef {
+  id              Int    @id @default(autoincrement())
+  landscapePos    String
+  agriUse         String
+  engineeringUse  String
+
+  diagRef   DiagnosticHorizonRef @relation(fields: [diagRefId], references: [id])
+  diagRefId Int
+}
+
+model UserGameStat {
+  id       Int @id @default(autoincrement())
+  totalXp  Int
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique
+
+  level           Level @relation(fields: [currentLevelId], references: [id])
+  currentLevelId  Int
+}
+
+model Level {
+  id          Int    @id @default(autoincrement())
+  levelNumber Int
+  title       String
+  description String
+  farmerName  String
+  scenario    String
+
+  userGameStats UserGameStat[]
+}
+
+enum QuestionCategory {
+  MUNSELL
+  DELINEATION
+}
+
+model Question {
+  id          Int               @id @default(autoincrement())
+  category    QuestionCategory
+  basePoints  Int
+  description String
+
+  monolith   Monolith @relation(fields: [monolithId], references: [id])
+  monolithId Int
+
+  attempts UserAttempt[]
+}
+
+model UserAttempt {
+  id           Int       @id @default(autoincrement())
+  isCorrect    Boolean
+  pointsEarned Int
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId Int
+}
+
+model AchievementMaster {
+  id           Int    @id @default(autoincrement())
+  title        String
+  description  String
+  criteriaCode String // e.g., "UNLOCK_LEVEL_5"
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id       Int      @id @default(autoincrement())
+  earnedAt DateTime @default(now())
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  achievement   AchievementMaster @relation(fields: [achievementId], references: [id])
+  achievementId Int
+
+  @@unique([userId, achievementId])
+}

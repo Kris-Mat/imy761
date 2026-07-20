@@ -8,17 +8,10 @@ node_modules
 claude.md
 
 
-# Firebase logging files
-dataconnect/.dataconnect
-.firebase
-dataconnect-debug.log
-firebase-debug.log
-pglite-debug.log
-
-
 #repomix files
 repomix-output.xml
 
 
 # personal notes
 notes.txt
+/docs
