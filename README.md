@@ -130,6 +130,14 @@ docker compose down           # to stop the docker container
 npm run db:migrate
 ```
 
+**For a "major" schema change** — adding a required (`NOT NULL`) column to a table that already has rows, changing a column's type, renaming/dropping a model, changing a primary key type — `db:migrate` will fail with a Postgres error (e.g. `column "x" contains null values`) because it can't apply the change against existing data. When that happens (or ahead of time, if you know the change is this kind), reset the local database instead of trying to patch around it:
+
+```
+npm run db:reset
+```
+
+This drops your local database, reapplies every migration from scratch against an empty database (so there's no existing data to violate), and re-runs the seed script automatically. Only ever run this against your **local** dev database — never against a shared/production one, since it deletes all data. This is exactly what to reach for the moment you see a `P3018` error from `db:migrate`.
+
 **Regenerating the typed client** (usually automatic after `db:migrate`, but needed after pulling schema changes without a new migration):
 
 ```
@@ -148,7 +156,7 @@ npm run db:studio
 npm run db:deploy
 ```
 
-Rule of thumb: `db:migrate` is for local development (it also generates the migration file); `db:deploy` is for applying already-committed migrations to another environment. Never run `db:migrate` against a shared/production database.
+Rule of thumb: `db:migrate` is for local development (it also generates the migration file); `db:reset` is for local development when `db:migrate` fails on existing data; `db:deploy` is for applying already-committed migrations to another environment. Never run `db:migrate` or `db:reset` against a shared/production database.
 
 
 ## Branching
