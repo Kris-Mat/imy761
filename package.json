@@ -17,6 +17,8 @@
     "dev": "concurrently -n plain,gamified -c yellow,magenta \"npm:dev:plain\" \"npm:dev:gamified\"",
     "build:plain:client": "npm run build -w plain-client",
     "build:gamified:client": "npm run build -w gamified-client",
+    "build:plain:server": "npm run build -w plain-server",
+    "build:gamified:server": "npm run build -w gamified-server",
     "typecheck:plain:server": "tsc --noEmit -p apps/plain/server/tsconfig.json",
     "typecheck:gamified:server": "tsc --noEmit -p apps/gamified/server/tsconfig.json",
     "typecheck:shared:server": "tsc --noEmit -p apps/shared/server/tsconfig.json",
