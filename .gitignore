@@ -1,0 +1,17 @@
+node_modules
+
+.vscode/*
+!.vscode/extensions.json
+
+.env
+
+claude.md
+
+
+#repomix files
+repomix-output.xml
+
+
+# personal notes
+notes.txt
+/docs
