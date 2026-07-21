@@ -8,11 +8,12 @@ import { RegisterRoutes } from './src/swagger/routes';
 const app: Application = express();
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
-const serverPort = process.env.PORT_SERVER || 3000;
+const serverPort = process.env.PORT || process.env.PORT_SERVER || 3000;
 const clientPort = process.env.PORT_CLIENT;
+const clientOrigin = process.env.CLIENT_ORIGIN || `http://localhost:${clientPort}`;
 
 const corsOptions = {
-  origin: [`http://localhost:${clientPort}`]
+  origin: [clientOrigin]
 };
 
 app.use(cors(corsOptions));

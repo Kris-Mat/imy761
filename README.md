@@ -164,18 +164,19 @@ Rule of thumb: `db:migrate` is for local development (it also generates the migr
 Branch names should include the developer's name so changes are easy to attribute, in the form:
 
 ```
-<type>/<name>/<short-description>
+<type>/<issue-number><name>/<short-description>
 ```
 
 - `type` — `feature`, `fix`, `bug`, `refactor`, etc.
+- `issue_number` - the issue number (eg 12)
 - `name` — the developer's first name (or initials)
 - `short-description` — kebab-case summary of the change
 
 Examples:
 
 ```
-feature/krista/gamified-leaderboard
-bug/louise/user-api-cors
+feature/11/krista/gamified-leaderboard
+bug/20/louise/user-api-cors
 ```
 
 Open a PR into `dev` when a branch is ready for review; avoid pushing directly to `main` or `dev`.
