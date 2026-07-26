@@ -23,6 +23,7 @@
     "@mantine/nprogress": "^9.4.2",
     "@mantine/spotlight": "^9.4.2",
     "@mantine/tiptap": "^9.4.2",
+    "@phosphor-icons/react": "^2.1.10",
     "@tiptap/extension-link": "^3.29.0",
     "@tiptap/pm": "^3.29.0",
     "@tiptap/react": "^3.29.0",

@@ -7,6 +7,7 @@ import '@mantine/core/styles.css';
 import { MantineProvider } from '@mantine/core';
 import type { User } from '@shared/api/models/user.model';
 import { userApi } from '@shared/api/services/users.api';
+import { Icon } from '@shared/ui/Icon';
 
 function App() {
   const [count, setCount] = useState(0);
@@ -60,9 +61,7 @@ function App() {
 
       <section id="next-steps">
         <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
+          <Icon name="BookOpen" className="icon" role="presentation" aria-hidden="true" />
           <h2>Documentation</h2>
           <p>Your questions, answered</p>
           <ul>
@@ -81,57 +80,31 @@ function App() {
           </ul>
         </div>
         <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
+          <Icon name="Users" className="icon" role="presentation" aria-hidden="true" />
           <h2>Connect with us</h2>
           <p>Join the Vite community</p>
           <ul>
             <li>
               <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
+                <Icon name="GithubLogo" className="button-icon" role="presentation" aria-hidden="true" />
                 GitHub
               </a>
             </li>
             <li>
               <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
+                <Icon name="DiscordLogo" className="button-icon" role="presentation" aria-hidden="true" />
                 Discord
               </a>
             </li>
             <li>
               <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
+                <Icon name="XLogo" className="button-icon" role="presentation" aria-hidden="true" />
                 X.com
               </a>
             </li>
             <li>
               <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
+                <Icon name="Butterfly" className="button-icon" role="presentation" aria-hidden="true" />
                 Bluesky
               </a>
             </li>
