@@ -28,6 +28,11 @@ model Monolith {
 
   horizons  Horizon[]
   questions Question[]
+
+  // A farm is the in-game "wrapper" around a soil profile: farmer identity,
+  // description, and the dialogue that walks a player through this exact
+  // Monolith's soil profile. One monolith = one farm.
+  farm Farm?
 }
 
 model Horizon {
@@ -51,15 +56,18 @@ model DiagnosticHorizonRef {
   category         String
   criticalConcepts String
 
-  horizons       Horizon[]
-  ecosystemRefs  EcosystemRef[]
+  horizons      Horizon[]
+  ecosystemRefs EcosystemRef[]
 }
 
+// Renamed fields (previously landscapePos / agriUse / engineeringUse) to
+// clearly reflect the three ecosystem contexts described in the source
+// material: Natural, Agricultural and Urban.
 model EcosystemRef {
-  id              Int    @id @default(autoincrement())
-  landscapePos    String
-  agriUse         String
-  engineeringUse  String
+  id                    Int    @id @default(autoincrement())
+  naturalEcosystemNotes String
+  agriculturalNotes     String
+  urbanEcosystemNotes   String
 
   diagRef   DiagnosticHorizonRef @relation(fields: [diagRefId], references: [id])
   diagRefId Int
@@ -76,13 +84,45 @@ model UserGameStat {
   currentLevelId  Int
 }
 
-model Level {
+// A Farm holds everything about the in-game location itself: which farmer
+// runs it, a description of the place, and which soil profile (Monolith) it
+// sits on. One farm always maps to exactly one soil profile.
+model Farm {
   id          Int    @id @default(autoincrement())
-  levelNumber Int
-  title       String
-  description String
+  name        String // in-game location name, e.g. "The Rocky Outcrop"
   farmerName  String
-  scenario    String
+  description String
+
+  monolith   Monolith @relation(fields: [monolithId], references: [id])
+  monolithId Int      @unique
+
+  dialogLines FarmDialogLine[]
+  level       Level?
+}
+
+// The sequenced narration/dialogue that leads a player through a farm's
+// soil profile and questions. questionId is optional so intro/outro lines
+// (not tied to a specific question) can still be sequenced in.
+model FarmDialogLine {
+  id       Int    @id @default(autoincrement())
+  sequence Int
+  speaker  String
+  text     String
+
+  farm   Farm @relation(fields: [farmId], references: [id])
+  farmId Int
+
+  question   Question? @relation(fields: [questionId], references: [id])
+  questionId Int?
+}
+
+// Level is now just the game-progression wrapper around a Farm.
+model Level {
+  id          Int @id @default(autoincrement())
+  levelNumber Int
+
+  farm   Farm @relation(fields: [farmId], references: [id])
+  farmId Int  @unique
 
   userGameStats UserGameStat[]
 }
@@ -101,7 +141,8 @@ model Question {
   monolith   Monolith @relation(fields: [monolithId], references: [id])
   monolithId Int
 
-  attempts UserAttempt[]
+  attempts    UserAttempt[]
+  dialogLines FarmDialogLine[]
 }
 
 model UserAttempt {
