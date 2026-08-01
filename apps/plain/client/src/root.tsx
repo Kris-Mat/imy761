@@ -5,7 +5,10 @@ import {
   Scripts,
   ScrollRestoration
 } from 'react-router';
+import { MantineProvider } from '@mantine/core';
+import '@mantine/core/styles.css';
 import './index.css';
+import { theme } from './theme';
 
 export function Layout({ children }: { children: React.ReactNode; }) {
   return (
@@ -32,5 +35,9 @@ export function Layout({ children }: { children: React.ReactNode; }) {
 }
 
 export default function Root() {
-  return <Outlet />;
+  return (
+    <MantineProvider theme={theme}>
+      <Outlet />
+    </MantineProvider>
+  );
 }
