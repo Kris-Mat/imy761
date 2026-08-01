@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Anchor,
-  Badge,
+  Box,
   Button,
   Checkbox,
+  createTheme,
+  Flex,
   Group,
+  Image,
   MantineProvider,
-  Paper,
   PasswordInput,
   SegmentedControl,
   Stack,
@@ -20,6 +22,27 @@ import { useForm, isNotEmpty, isEmail } from '@mantine/form';
 import { Icon } from '@shared/ui/Icon';
 import { authApi } from '@shared/api/services/auth.api';
 import { userApi } from '@shared/api/services/users.api';
+import soilScientistImg from '../assets/soil-scientist.jpg';
+
+// Palette sampled from the soil-scientist illustration: rust/terracotta amoeba,
+// mustard-gold molecule diagram, olive-green grass and bacteria, charcoal soil layer.
+const theme = createTheme({
+  primaryColor: 'terracotta',
+  colors: {
+    terracotta: [
+      '#fdf1ec', '#fadfd2', '#f3c0ac', '#eb9f84', '#e2805f',
+      '#d66b48', '#c9603f', '#ad4f34', '#8a3f2a', '#5f2b1d'
+    ],
+    mustard: [
+      '#fdf8ec', '#fbeed0', '#f6dfa8', '#f0cd7c', '#e8ba54',
+      '#e2ae4c', '#dba24a', '#b98a3d', '#926d30', '#695022'
+    ],
+    charcoal: [
+      '#eef0f2', '#d4d8dd', '#b3bac2', '#8f99a4', '#6b7783',
+      '#4d5762', '#3a424c', '#2b2f3a', '#1f232b', '#14171c'
+    ]
+  }
+});
 
 type AuthMode = 'login' | 'signup' | 'forgot';
 
@@ -35,18 +58,6 @@ interface AuthFormValues {
 interface ForgotFormValues {
   email: string;
 }
-
-const BADGES = [
-  {
-    icon: 'Trophy', label: 'Earn XP'
-  },
-  {
-    icon: 'Sparkle', label: 'Level up'
-  },
-  {
-    icon: 'RocketLaunch', label: 'Unlock badges'
-  }
-] as const;
 
 function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -130,181 +141,180 @@ function AuthPage() {
   };
 
   return (
-    <MantineProvider>
-      <Stack
-        align="center"
-        justify="center"
+    <MantineProvider theme={theme}>
+      <Box
+        bg="white"
         mih="100vh"
-        p="md"
+        w="100%"
       >
-        <Group gap="xs">
-          {BADGES.map((badge) => (
-            <Badge
-              key={badge.icon}
-              size="lg"
-              radius="sm"
-              variant="outline"
-              color="dark"
-              leftSection={<Icon name={badge.icon} size={14} />}
-            >
-              {badge.label}
-            </Badge>
-          ))}
-        </Group>
-
-        <Paper
-          withBorder
-          shadow="lg"
-          radius="lg"
+        <Flex
+          direction={{
+            base: 'column', md: 'row' 
+          }}
+          align="center"
+          justify="center"
+          gap={60}
+          mih="100vh"
           p="xl"
-          w={400}
-          mt="sm"
         >
-          {!isForgot && (
-            <SegmentedControl
-              fullWidth
-              value={mode}
-              onChange={(value) => setMode(value as AuthMode)}
-              data={[
-                {
-                  label: 'Log in', value: 'login'
-                },
-                {
-                  label: 'Sign up', value: 'signup'
-                }
-              ]}
+          <Box style={{
+            flex: 1, maxWidth: 480 
+          }}
+          >
+            <Image
+              src={soilScientistImg}
+              alt=""
+              radius="md"
             />
-          )}
+          </Box>
 
-          <Title
-            order={2}
-            ta="center"
-            mt="lg"
+          <Box style={{
+            flex: 1, maxWidth: 380, width: '100%' 
+          }}
           >
-            {isForgot ? 'Reset your password' : isLogin ? 'Ready to dig in?' : "Let's get started"}
-          </Title>
-          <Text
-            c="dimmed"
-            size="sm"
-            ta="center"
-            mt={5}
-          >
-            {isForgot
-              ? forgotSent
-                ? "We've sent a password reset link to your email."
-                : "Enter your email and we'll send you a reset link."
-              : isLogin
-                ? 'Log in to keep your streak going.'
-                : 'Create an account and start earning XP.'}
-          </Text>
+            {!isForgot && (
+              <SegmentedControl
+                fullWidth
+                mb="lg"
+                value={mode}
+                onChange={(value) => setMode(value as AuthMode)}
+                data={[
+                  {
+                    label: 'Log in', value: 'login'
+                  },
+                  {
+                    label: 'Sign up', value: 'signup'
+                  }
+                ]}
+              />
+            )}
 
-          {isForgot ? (
-            <>
-              {!forgotSent && (
-                <form onSubmit={forgotForm.onSubmit(handleForgotSubmit)}>
-                  <Stack mt="lg">
-                    <TextInput
-                      required
-                      label="Email"
-                      placeholder="you@example.com"
-                      leftSection={<Icon name="EnvelopeSimple" size={16} />}
-                      {...forgotForm.getInputProps('email')}
-                    />
-                    <Button
-                      type="submit"
-                      fullWidth
-                      mt="xl"
-                      color="dark"
-                      loading={submitting}
-                    >
-                      Send reset link
-                    </Button>
-                  </Stack>
-                </form>
-              )}
-              <Anchor
-                size="sm"
-                component="button"
-                type="button"
-                mt="lg"
-                display="block"
-                ta="center"
-                onClick={backToLogin}
-              >
-                Back to log in
-              </Anchor>
-            </>
-          ) : (
-            <form onSubmit={form.onSubmit(handleSubmit)}>
-              <Stack mt="lg">
-                <TextInput
-                  required
-                  label="Email"
-                  placeholder="you@example.com"
-                  leftSection={<Icon name="EnvelopeSimple" size={16} />}
-                  {...form.getInputProps('email')}
-                />
-                <PasswordInput
-                  required
-                  label="Password"
-                  placeholder="Your password"
-                  {...form.getInputProps('password')}
-                />
-                {!isLogin && (
-                  <>
-                    <TextInput
-                      required
-                      label="Username"
-                      placeholder="soildigger42"
-                      {...form.getInputProps('username')}
-                    />
-                    <Group grow>
+            <Title
+              order={1}
+              c="charcoal.7"
+            >
+              {isForgot ? 'Reset password' : isLogin ? 'Login' : 'Sign up'}
+            </Title>
+            <Text
+              c="dimmed"
+              size="sm"
+              mt={5}
+              mb="lg"
+            >
+              {isForgot
+                ? forgotSent
+                  ? "We've sent a password reset link to your email."
+                  : "Enter your email and we'll send you a reset link."
+                : isLogin
+                  ? 'Log in to keep your streak going.'
+                  : 'Create an account and start earning XP.'}
+            </Text>
+
+            {isForgot ? (
+              <>
+                {!forgotSent && (
+                  <form onSubmit={forgotForm.onSubmit(handleForgotSubmit)}>
+                    <Stack>
                       <TextInput
                         required
-                        label="First name"
-                        placeholder="Jane"
-                        {...form.getInputProps('firstName')}
+                        label="Email"
+                        placeholder="you@example.com"
+                        leftSection={<Icon name="EnvelopeSimple" size={16} />}
+                        {...forgotForm.getInputProps('email')}
                       />
-                      <TextInput
-                        required
-                        label="Last name"
-                        placeholder="Doe"
-                        {...form.getInputProps('lastName')}
-                      />
-                    </Group>
-                  </>
+                      <Button
+                        type="submit"
+                        fullWidth
+                        mt="xl"
+                        loading={submitting}
+                      >
+                        Send reset link
+                      </Button>
+                    </Stack>
+                  </form>
                 )}
-                {isLogin && (
-                  <Group justify="space-between">
-                    <Checkbox
-                      label="Remember me"
-                      {...form.getInputProps('rememberMe', { type: 'checkbox' })}
-                    />
-                    <Anchor
-                      size="sm"
-                      component="button"
-                      type="button"
-                      onClick={() => setMode('forgot')}
-                    >
-                      Forgot password?
-                    </Anchor>
-                  </Group>
-                )}
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  mt="xl"
-                  color="dark"
-                  loading={submitting}
+                <Anchor
+                  size="sm"
+                  component="button"
+                  type="button"
+                  mt="lg"
+                  display="block"
+                  onClick={backToLogin}
                 >
-                  {isLogin ? 'Log in' : 'Create account'}
-                </Button>
-              </Stack>
-            </form>
-          )}
-        </Paper>
-      </Stack>
+                  Back to log in
+                </Anchor>
+              </>
+            ) : (
+              <form onSubmit={form.onSubmit(handleSubmit)}>
+                <Stack>
+                  <TextInput
+                    required
+                    label="Email"
+                    placeholder="you@example.com"
+                    leftSection={<Icon name="EnvelopeSimple" size={16} />}
+                    {...form.getInputProps('email')}
+                  />
+                  <PasswordInput
+                    required
+                    label="Password"
+                    placeholder="Your password"
+                    {...form.getInputProps('password')}
+                  />
+                  {!isLogin && (
+                    <>
+                      <TextInput
+                        required
+                        label="Username"
+                        placeholder="soildigger42"
+                        {...form.getInputProps('username')}
+                      />
+                      <Group grow>
+                        <TextInput
+                          required
+                          label="First name"
+                          placeholder="Jane"
+                          {...form.getInputProps('firstName')}
+                        />
+                        <TextInput
+                          required
+                          label="Last name"
+                          placeholder="Doe"
+                          {...form.getInputProps('lastName')}
+                        />
+                      </Group>
+                    </>
+                  )}
+                  {isLogin && (
+                    <Group justify="space-between">
+                      <Checkbox
+                        label="Remember me"
+                        {...form.getInputProps('rememberMe', { type: 'checkbox' })}
+                      />
+                      <Anchor
+                        size="sm"
+                        component="button"
+                        type="button"
+                        onClick={() => setMode('forgot')}
+                      >
+                        Forgot password?
+                      </Anchor>
+                    </Group>
+                  )}
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    mt="xl"
+                    loading={submitting}
+                  >
+                    {isLogin ? 'Log in' : 'Create account'}
+                  </Button>
+                </Stack>
+              </form>
+            )}
+          </Box>
+        </Flex>
+      </Box>
     </MantineProvider>
   );
 }
