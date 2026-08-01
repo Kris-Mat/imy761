@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router';
 import { authApi } from '@shared/api/services/auth.api';
+import { LoadingPage } from '@shared/ui/LoadingPage';
 
 type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated';
 
@@ -18,7 +19,7 @@ export function RequireAuth() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  if (status === 'checking') return null;
+  if (status === 'checking') return <LoadingPage />;
   if (status === 'unauthenticated') return <Navigate to="/login" replace />;
   return <Outlet />;
 }
