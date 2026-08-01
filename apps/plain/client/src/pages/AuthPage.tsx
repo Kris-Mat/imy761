@@ -19,7 +19,7 @@ import { Icon } from '@shared/ui/Icon';
 import { authApi } from '@shared/api/services/auth.api';
 import { userApi } from '@shared/api/services/users.api';
 
-type AuthMode = 'login' | 'signup';
+type AuthMode = 'login' | 'signup' | 'forgot';
 
 interface AuthFormValues {
   email: string;
@@ -30,10 +30,16 @@ interface AuthFormValues {
   rememberMe: boolean;
 }
 
+interface ForgotFormValues {
+  email: string;
+}
+
 function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [submitting, setSubmitting] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const isLogin = mode === 'login';
+  const isForgot = mode === 'forgot';
   const navigate = useNavigate();
 
   const form = useForm<AuthFormValues>({
@@ -53,6 +59,11 @@ function AuthPage() {
         ? undefined
         : (value) => (value.trim().length > 0 ? null : 'Last name is required')
     }
+  });
+
+  const forgotForm = useForm<ForgotFormValues>({
+    initialValues: { email: '' },
+    validate: { email: isEmail('Enter a valid email') }
   });
 
   useEffect(() => {
@@ -84,6 +95,26 @@ function AuthPage() {
     }
   };
 
+  const handleForgotSubmit = async (values: ForgotFormValues) => {
+    setSubmitting(true);
+    try {
+      const { error } = await authApi.resetPasswordForEmail(values.email);
+      if (error) {
+        forgotForm.setErrors({ email: error.message });
+      } else {
+        setForgotSent(true);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const backToLogin = () => {
+    setMode('login');
+    setForgotSent(false);
+    forgotForm.reset();
+  };
+
   return (
     <MantineProvider>
       <Stack
@@ -100,7 +131,7 @@ function AuthPage() {
           w={400}
         >
           <Title order={2} ta="center">
-            {isLogin ? 'Welcome back' : 'Create an account'}
+            {isForgot ? 'Reset your password' : isLogin ? 'Welcome back' : 'Create an account'}
           </Title>
           <Text
             c="dimmed"
@@ -108,79 +139,130 @@ function AuthPage() {
             ta="center"
             mt={5}
           >
-            {isLogin ? 'Do not have an account yet? ' : 'Already have an account? '}
-            <Anchor
-              size="sm"
-              component="button"
-              type="button"
-              onClick={() => setMode(isLogin ? 'signup' : 'login')}
-            >
-              {isLogin ? 'Create account' : 'Log in'}
-            </Anchor>
+            {isForgot ? (
+              forgotSent
+                ? "We've sent a password reset link to your email."
+                : "Enter your email and we'll send you a reset link."
+            ) : (
+              <>
+                {isLogin ? 'Do not have an account yet? ' : 'Already have an account? '}
+                <Anchor
+                  size="sm"
+                  component="button"
+                  type="button"
+                  onClick={() => setMode(isLogin ? 'signup' : 'login')}
+                >
+                  {isLogin ? 'Create account' : 'Log in'}
+                </Anchor>
+              </>
+            )}
           </Text>
 
-          <form onSubmit={form.onSubmit(handleSubmit)}>
-            <Stack mt="lg">
-              <TextInput
-                required
-                label="Email"
-                placeholder="you@example.com"
-                leftSection={<Icon name="EnvelopeSimple" size={16} />}
-                {...form.getInputProps('email')}
-              />
-              <PasswordInput
-                required
-                label="Password"
-                placeholder="Your password"
-                {...form.getInputProps('password')}
-              />
-              {!isLogin && (
-                <>
-                  <TextInput
-                    required
-                    label="Username"
-                    placeholder="janedoe"
-                    {...form.getInputProps('username')}
-                  />
-                  <Group grow>
+          {isForgot ? (
+            <>
+              {!forgotSent && (
+                <form onSubmit={forgotForm.onSubmit(handleForgotSubmit)}>
+                  <Stack mt="lg">
                     <TextInput
                       required
-                      label="First name"
-                      placeholder="Jane"
-                      {...form.getInputProps('firstName')}
+                      label="Email"
+                      placeholder="you@example.com"
+                      leftSection={<Icon name="EnvelopeSimple" size={16} />}
+                      {...forgotForm.getInputProps('email')}
                     />
-                    <TextInput
-                      required
-                      label="Last name"
-                      placeholder="Doe"
-                      {...form.getInputProps('lastName')}
-                    />
-                  </Group>
-                </>
+                    <Button
+                      type="submit"
+                      fullWidth
+                      mt="xl"
+                      color="dark"
+                      loading={submitting}
+                    >
+                      Send reset link
+                    </Button>
+                  </Stack>
+                </form>
               )}
-              {isLogin && (
-                <Group justify="space-between">
-                  <Checkbox
-                    label="Remember me"
-                    {...form.getInputProps('rememberMe', { type: 'checkbox' })}
-                  />
-                  <Anchor size="sm" href="#">
-                    Forgot password?
-                  </Anchor>
-                </Group>
-              )}
-
-              <Button
-                type="submit"
-                fullWidth
-                mt="xl"
-                color="dark"
-                loading={submitting}
+              <Anchor
+                size="sm"
+                component="button"
+                type="button"
+                mt="lg"
+                display="block"
+                ta="center"
+                onClick={backToLogin}
               >
-                {isLogin ? 'Log in' : 'Create account'}
-              </Button>
-            </Stack>
-          </form>
+                Back to log in
+              </Anchor>
+            </>
+          ) : (
+            <form onSubmit={form.onSubmit(handleSubmit)}>
+              <Stack mt="lg">
+                <TextInput
+                  required
+                  label="Email"
+                  placeholder="you@example.com"
+                  leftSection={<Icon name="EnvelopeSimple" size={16} />}
+                  {...form.getInputProps('email')}
+                />
+                <PasswordInput
+                  required
+                  label="Password"
+                  placeholder="Your password"
+                  {...form.getInputProps('password')}
+                />
+                {!isLogin && (
+                  <>
+                    <TextInput
+                      required
+                      label="Username"
+                      placeholder="janedoe"
+                      {...form.getInputProps('username')}
+                    />
+                    <Group grow>
+                      <TextInput
+                        required
+                        label="First name"
+                        placeholder="Jane"
+                        {...form.getInputProps('firstName')}
+                      />
+                      <TextInput
+                        required
+                        label="Last name"
+                        placeholder="Doe"
+                        {...form.getInputProps('lastName')}
+                      />
+                    </Group>
+                  </>
+                )}
+                {isLogin && (
+                  <Group justify="space-between">
+                    <Checkbox
+                      label="Remember me"
+                      {...form.getInputProps('rememberMe', { type: 'checkbox' })}
+                    />
+                    <Anchor
+                      size="sm"
+                      component="button"
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                    >
+                      Forgot password?
+                    </Anchor>
+                  </Group>
+                )}
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  mt="xl"
+                  color="dark"
+                  loading={submitting}
+                >
+                  {isLogin ? 'Log in' : 'Create account'}
+                </Button>
+              </Stack>
+            </form>
+          )}
         </Paper>
       </Stack>
     </MantineProvider>

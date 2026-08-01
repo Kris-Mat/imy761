@@ -4,5 +4,6 @@ export default [
   layout('layouts/RequireAuth.tsx', [
     index('App.tsx')
   ]),
-  route('login', 'pages/AuthPage.tsx')
+  route('login', 'pages/AuthPage.tsx'),
+  route('reset-password', 'pages/ResetPasswordPage.tsx')
 ] satisfies RouteConfig;
