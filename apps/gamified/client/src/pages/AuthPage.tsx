@@ -9,7 +9,6 @@ import {
   Group,
   Image,
   PasswordInput,
-  SegmentedControl,
   Stack,
   Text,
   TextInput,
@@ -40,6 +39,7 @@ function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const isLogin = mode === 'login';
   const isForgot = mode === 'forgot';
   const navigate = useNavigate();
@@ -81,6 +81,7 @@ function AuthPage() {
 
   const handleSubmit = async (values: AuthFormValues) => {
     setSubmitting(true);
+    setAuthError(null);
     try {
       const { error } = isLogin
         ? await authApi.login(values.email, values.password)
@@ -90,7 +91,7 @@ function AuthPage() {
           lastName: values.lastName
         });
       if (error) {
-        form.setErrors({ email: error.message });
+        setAuthError(error.message);
       }
     } finally {
       setSubmitting(false);
@@ -114,6 +115,7 @@ function AuthPage() {
   const backToLogin = () => {
     setMode('login');
     setForgotSent(false);
+    setAuthError(null);
     forgotForm.reset();
   };
 
@@ -148,23 +150,6 @@ function AuthPage() {
           flex: 1, maxWidth: 380, width: '100%' 
         }}
         >
-          {!isForgot && (
-            <SegmentedControl
-              fullWidth
-              mb="lg"
-              value={mode}
-              onChange={(value) => setMode(value as AuthMode)}
-              data={[
-                {
-                  label: 'Log in', value: 'login'
-                },
-                {
-                  label: 'Sign up', value: 'signup'
-                }
-              ]}
-            />
-          )}
-
           <Title
             order={1}
             c="charcoal.7"
@@ -177,13 +162,26 @@ function AuthPage() {
             mt={5}
             mb="lg"
           >
-            {isForgot
-              ? forgotSent
+            {isForgot ? (
+              forgotSent
                 ? "We've sent a password reset link to your email."
                 : "Enter your email and we'll send you a reset link."
-              : isLogin
-                ? 'Log in to keep your streak going.'
-                : 'Create an account and start earning XP.'}
+            ) : (
+              <>
+                {isLogin ? 'Do not have an account yet? ' : 'Already have an account? '}
+                <Anchor
+                  size="sm"
+                  component="button"
+                  type="button"
+                  onClick={() => {
+                    setMode(isLogin ? 'signup' : 'login');
+                    setAuthError(null);
+                  }}
+                >
+                  {isLogin ? 'Create account' : 'Log in'}
+                </Anchor>
+              </>
+            )}
           </Text>
 
           {isForgot ? (
@@ -270,11 +268,20 @@ function AuthPage() {
                       size="sm"
                       component="button"
                       type="button"
-                      onClick={() => setMode('forgot')}
+                      onClick={() => {
+                        setMode('forgot');
+                        setAuthError(null);
+                      }}
                     >
                       Forgot password?
                     </Anchor>
                   </Group>
+                )}
+
+                {authError && (
+                  <Text c="red" size="sm">
+                    {authError}
+                  </Text>
                 )}
 
                 <Button

@@ -36,6 +36,7 @@ function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const isLogin = mode === 'login';
   const isForgot = mode === 'forgot';
   const navigate = useNavigate();
@@ -77,6 +78,7 @@ function AuthPage() {
 
   const handleSubmit = async (values: AuthFormValues) => {
     setSubmitting(true);
+    setAuthError(null);
     try {
       const { error } = isLogin
         ? await authApi.login(values.email, values.password)
@@ -86,7 +88,7 @@ function AuthPage() {
           lastName: values.lastName
         });
       if (error) {
-        form.setErrors({ email: error.message });
+        setAuthError(error.message);
       }
     } finally {
       setSubmitting(false);
@@ -110,6 +112,7 @@ function AuthPage() {
   const backToLogin = () => {
     setMode('login');
     setForgotSent(false);
+    setAuthError(null);
     forgotForm.reset();
   };
 
@@ -119,6 +122,7 @@ function AuthPage() {
       justify="center"
       mih="100vh"
       p="md"
+      bg="terracotta.0"
     >
       <Paper
         withBorder
@@ -127,7 +131,11 @@ function AuthPage() {
         p="xl"
         w={400}
       >
-        <Title order={2} ta="center">
+        <Title
+          order={2}
+          ta="center"
+          c="charcoal.7"
+        >
           {isForgot ? 'Reset your password' : isLogin ? 'Welcome back' : 'Create an account'}
         </Title>
         <Text
@@ -147,7 +155,10 @@ function AuthPage() {
                 size="sm"
                 component="button"
                 type="button"
-                onClick={() => setMode(isLogin ? 'signup' : 'login')}
+                onClick={() => {
+                  setMode(isLogin ? 'signup' : 'login');
+                  setAuthError(null);
+                }}
               >
                 {isLogin ? 'Create account' : 'Log in'}
               </Anchor>
@@ -171,7 +182,6 @@ function AuthPage() {
                     type="submit"
                     fullWidth
                     mt="xl"
-                    color="dark"
                     loading={submitting}
                   >
                     Send reset link
@@ -241,18 +251,26 @@ function AuthPage() {
                     size="sm"
                     component="button"
                     type="button"
-                    onClick={() => setMode('forgot')}
+                    onClick={() => {
+                      setMode('forgot');
+                      setAuthError(null);
+                    }}
                   >
                     Forgot password?
                   </Anchor>
                 </Group>
               )}
 
+              {authError && (
+                <Text c="red" size="sm">
+                  {authError}
+                </Text>
+              )}
+
               <Button
                 type="submit"
                 fullWidth
                 mt="xl"
-                color="dark"
                 loading={submitting}
               >
                 {isLogin ? 'Log in' : 'Create account'}

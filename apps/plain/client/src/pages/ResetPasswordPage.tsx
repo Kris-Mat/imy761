@@ -57,6 +57,7 @@ function ResetPasswordPage() {
       justify="center"
       mih="100vh"
       p="md"
+      bg="terracotta.0"
     >
       <Paper
         withBorder
@@ -65,7 +66,11 @@ function ResetPasswordPage() {
         p="xl"
         w={400}
       >
-        <Title order={2} ta="center">
+        <Title
+          order={2}
+          ta="center"
+          c="charcoal.7"
+        >
           Set a new password
         </Title>
 
@@ -93,7 +98,6 @@ function ResetPasswordPage() {
             <Button
               fullWidth
               mt="xl"
-              color="dark"
               onClick={() => navigate('/login')}
             >
               Back to log in
@@ -118,7 +122,6 @@ function ResetPasswordPage() {
                 type="submit"
                 fullWidth
                 mt="xl"
-                color="dark"
                 loading={submitting}
               >
                 Update password
