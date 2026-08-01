@@ -1,4 +1,6 @@
 node_modules
+.react-router
+*.tsbuildinfo
 
 .vscode/*
 !.vscode/extensions.json
