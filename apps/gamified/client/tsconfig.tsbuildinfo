@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts"],"version":"6.0.3"}
+{"root":["./src/app.tsx","./src/root.tsx","./src/routes.ts","./src/vite-env.d.ts","./src/layouts/requireauth.tsx","./src/pages/authpage.tsx","./.react-router/types/+future.ts","./.react-router/types/+routes.ts","./.react-router/types/+server-build.d.ts","./.react-router/types/src/+types/app.ts","./.react-router/types/src/+types/root.ts","./.react-router/types/src/layouts/+types/requireauth.ts","./.react-router/types/src/pages/+types/authpage.ts"],"version":"6.0.3"}

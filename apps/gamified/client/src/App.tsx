@@ -7,6 +7,7 @@ import '@mantine/core/styles.css';
 import { MantineProvider } from '@mantine/core';
 import type { User } from '@shared/api/models/user.model';
 import { userApi } from '@shared/api/services/users.api';
+import { authApi } from '@shared/api/services/auth.api';
 import { Icon } from '@shared/ui/Icon';
 
 function App() {
@@ -14,9 +15,16 @@ function App() {
   const [users, setUsers] = useState<User[] | null>([]);
 
   const fetchAPI = async () => {
+    // GET /users requires a Supabase session; the demo list only renders once logged in.
+    const session = await authApi.getSession();
+    if (!session) {
+      setUsers(null);
+      return;
+    }
+
     let response = null;
     try {
-      response = await userApi.getUsers();
+      response = await userApi.getUsers(session.access_token);
     } catch (error) {
       console.error("Error getting users:", error);
     } finally {
