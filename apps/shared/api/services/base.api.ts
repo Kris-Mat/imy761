@@ -21,10 +21,7 @@ export class BaseApi {
       return response.data as T;
     } catch (error) {
       console.error('GET request failed', error);
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      throw new Error('GET request failed', {
-        cause: { status, error }
-      });
+      throw new Error('GET request failed', { cause: error });
     }
   }
 
@@ -44,10 +41,7 @@ export class BaseApi {
       return response.data as T;
     } catch (error) {
       console.error('POST request failed', error);
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      throw new Error('POST request failed', {
-        cause: { status, error }
-      });
+      throw new Error('POST request failed', { cause: error });
     }
   }
 

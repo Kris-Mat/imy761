@@ -7,7 +7,12 @@ import stylistic from "@stylistic/eslint-plugin";
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['**/dist', 'src/dataconnect-generated', 'src/dataconnect-generated-admin']),
+  globalIgnores([
+    '**/dist',
+    'src/dataconnect-generated',
+    'src/dataconnect-generated-admin',
+    '**/.react-router/**'
+  ]),
   {
     files: ['**/*.{ts,tsx,js}'],
     extends: [

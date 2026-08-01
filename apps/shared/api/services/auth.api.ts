@@ -5,7 +5,7 @@ class AuthApi {
   async signUp(
     email: string,
     password: string,
-    profile: { username: string; firstName: string; lastName: string }
+    profile: { username: string; firstName: string; lastName: string; }
   ) {
     return supabase.auth.signUp({
       email,
@@ -15,7 +15,9 @@ class AuthApi {
   }
 
   async login(email: string, password: string) {
-    return supabase.auth.signInWithPassword({ email, password });
+    return supabase.auth.signInWithPassword({
+      email, password 
+    });
   }
 
   async logout() {

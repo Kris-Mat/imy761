@@ -31,6 +31,7 @@ function App() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchAPI awaits before setting state; this is a standard fetch-on-mount effect
     fetchAPI();
   }, []);
 

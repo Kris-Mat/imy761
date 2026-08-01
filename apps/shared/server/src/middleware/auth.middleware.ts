@@ -23,10 +23,12 @@ function getVerifier() {
 export interface AuthenticatedUser {
   sub: string;
   email?: string;
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- must match Supabase's JWT claim name verbatim
   user_metadata?: Record<string, unknown>;
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- required syntax for augmenting Express's own namespaced types
   namespace Express {
     interface Request {
       user?: AuthenticatedUser;
