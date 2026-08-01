@@ -1,5 +1,5 @@
 import { Accordion, Loader, NavLink as MantineNavLink, Stack, Text, Title } from '@mantine/core';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useContent } from '../context/ContentContext';
 import { Icon } from '@shared/ui/Icon';
 
@@ -10,7 +10,7 @@ function ChapterStatusIcon({ completed }: { completed: boolean; }) {
         name="CheckCircle"
         size={18}
         weight="fill"
-        color="var(--mantine-color-soil-8)"
+        color="var(--mantine-color-terracotta-7)"
       />
     );
   }
@@ -31,7 +31,7 @@ function Tests() {
     <Stack maw={1100} mx="auto">
       <Title order={1} mb="lg">Tests</Title>
 
-      {loading && <Loader color="soil" />}
+      {loading && <Loader color="terracotta" />}
 
       <Accordion variant="separated" radius="md">
         {monoliths.map((monolith) => {

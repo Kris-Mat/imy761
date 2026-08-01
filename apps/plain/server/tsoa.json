@@ -1,7 +1,10 @@
 {
   "entryFile": "server.ts",
   "noImplicitAdditionalProperties": "throw-on-extras",
-  "controllerPathGlobs": ["src/controllers/**/*.controller.ts"],
+  "controllerPathGlobs": [
+    "src/controllers/**/*.controller.ts",
+    "../../shared/server/src/controllers/**/*.controller.ts"
+  ],
   "compilerOptions": {
     "paths": {
       "@shared/*": ["../../shared/*"]
