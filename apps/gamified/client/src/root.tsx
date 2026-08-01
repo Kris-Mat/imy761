@@ -3,16 +3,23 @@ import {
   Meta,
   Outlet,
   Scripts,
-  ScrollRestoration,
+  ScrollRestoration
 } from 'react-router';
+import { MantineProvider } from '@mantine/core';
+import '@mantine/core/styles.css';
 import './index.css';
+import { theme } from './theme';
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode; }) {
   return (
     <html lang="en">
       <head>
         <meta charSet="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link
+          rel="icon"
+          type="image/svg+xml"
+          href="/favicon.svg"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Gamified App</title>
         <Meta />
@@ -28,5 +35,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function Root() {
-  return <Outlet />;
+  return (
+    <MantineProvider theme={theme}>
+      <Outlet />
+    </MantineProvider>
+  );
 }
