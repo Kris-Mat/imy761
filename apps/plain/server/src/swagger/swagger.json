@@ -35,6 +35,250 @@
 				],
 				"type": "object",
 				"additionalProperties": false
+			},
+			"HorizonCharacteristic": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"text": {
+						"type": "string"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"id",
+					"text",
+					"orderIndex"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Horizon": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"label": {
+						"type": "string"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					},
+					"colourText": {
+						"type": "string"
+					},
+					"colourHue": {
+						"type": "string"
+					},
+					"colourValue": {
+						"type": "number",
+						"format": "double"
+					},
+					"colourChroma": {
+						"type": "number",
+						"format": "double"
+					},
+					"characteristics": {
+						"items": {
+							"$ref": "#/components/schemas/HorizonCharacteristic"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"id",
+					"label",
+					"orderIndex",
+					"colourText",
+					"colourHue",
+					"colourValue",
+					"colourChroma",
+					"characteristics"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"QuestionCategory": {
+				"type": "string",
+				"enum": [
+					"DIAGNOSTIC_HORIZONS",
+					"SOIL_FORM",
+					"LANDSCAPE_POSITION",
+					"SUITABILITY"
+				]
+			},
+			"AnswerOption": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"text": {
+						"type": "string"
+					},
+					"isCorrect": {
+						"type": "boolean"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"id",
+					"text",
+					"isCorrect",
+					"orderIndex"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Question": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"category": {
+						"$ref": "#/components/schemas/QuestionCategory"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					},
+					"prompt": {
+						"type": "string"
+					},
+					"options": {
+						"items": {
+							"$ref": "#/components/schemas/AnswerOption"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"id",
+					"category",
+					"orderIndex",
+					"prompt",
+					"options"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"SoilFamilyField": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"label": {
+						"type": "string"
+					},
+					"correctValue": {
+						"type": "string"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"id",
+					"label",
+					"correctValue",
+					"orderIndex"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"SoilFamilyCode": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"finalCode": {
+						"type": "string"
+					},
+					"soilFamilyName": {
+						"type": "string"
+					},
+					"fields": {
+						"items": {
+							"$ref": "#/components/schemas/SoilFamilyField"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"id",
+					"finalCode",
+					"soilFamilyName",
+					"fields"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Monolith": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"imageUrl": {
+						"type": "string"
+					},
+					"finalSoilForm": {
+						"type": "string"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					},
+					"horizons": {
+						"items": {
+							"$ref": "#/components/schemas/Horizon"
+						},
+						"type": "array"
+					},
+					"questions": {
+						"items": {
+							"$ref": "#/components/schemas/Question"
+						},
+						"type": "array"
+					},
+					"soilFamilyCode": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/SoilFamilyCode"
+							}
+						],
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"imageUrl",
+					"finalSoilForm",
+					"orderIndex",
+					"horizons",
+					"questions",
+					"soilFamilyCode"
+				],
+				"type": "object",
+				"additionalProperties": false
 			}
 		},
 		"securitySchemes": {}
@@ -59,6 +303,28 @@
 								"schema": {
 									"items": {
 										"$ref": "#/components/schemas/User"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [],
+				"parameters": []
+			}
+		},
+		"/monoliths": {
+			"get": {
+				"operationId": "GetMonoliths",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/Monolith"
 									},
 									"type": "array"
 								}

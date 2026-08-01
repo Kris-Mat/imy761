@@ -23,46 +23,72 @@ model User {
 model Monolith {
   id            Int    @id @default(autoincrement())
   name          String
-  modelUrl      String
+  imageUrl      String
   finalSoilForm String
+  orderIndex    Int
 
-  horizons  Horizon[]
-  questions Question[]
+  horizons       Horizon[]
+  questions      Question[]
+  soilFamilyCode SoilFamilyCode?
 }
 
 model Horizon {
-  id              Int    @id @default(autoincrement())
-  depthTopMm      Int
-  depthBottomMm   Int
-  correctHue      String
-  correctValue    Int
-  correctChroma   Int
+  id            Int    @id @default(autoincrement())
+  label         String
+  orderIndex    Int
+  colourText    String
+  colourHue     String
+  colourValue   Int
+  colourChroma  Int
 
   monolith   Monolith @relation(fields: [monolithId], references: [id])
   monolithId Int
 
-  diagRef   DiagnosticHorizonRef @relation(fields: [diagRefId], references: [id])
-  diagRefId Int
+  characteristics HorizonCharacteristic[]
 }
 
-model DiagnosticHorizonRef {
-  id               Int    @id @default(autoincrement())
-  name             String
-  category         String
-  criticalConcepts String
+// Reuses the DiagnosticHorizonRef table slot: was a shared horizon-type
+// reference, now the per-horizon characteristic bullet list.
+model HorizonCharacteristic {
+  id         Int    @id @default(autoincrement())
+  text       String
+  orderIndex Int
 
-  horizons       Horizon[]
-  ecosystemRefs  EcosystemRef[]
+  horizon   Horizon @relation(fields: [horizonId], references: [id])
+  horizonId Int
 }
 
-model EcosystemRef {
-  id              Int    @id @default(autoincrement())
-  landscapePos    String
-  agriUse         String
-  engineeringUse  String
+// Reuses the EcosystemRef table slot: was a shared landscape/use reference,
+// now a generic MCQ answer option (used by every Question below).
+model AnswerOption {
+  id         Int     @id @default(autoincrement())
+  text       String
+  isCorrect  Boolean
+  orderIndex Int
 
-  diagRef   DiagnosticHorizonRef @relation(fields: [diagRefId], references: [id])
-  diagRefId Int
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId Int
+}
+
+model SoilFamilyCode {
+  id             Int    @id @default(autoincrement())
+  finalCode      String
+  soilFamilyName String
+
+  monolith   Monolith @relation(fields: [monolithId], references: [id])
+  monolithId Int      @unique
+
+  fields SoilFamilyField[]
+}
+
+model SoilFamilyField {
+  id           Int    @id @default(autoincrement())
+  label        String
+  correctValue String
+  orderIndex   Int
+
+  soilFamilyCode   SoilFamilyCode @relation(fields: [soilFamilyCodeId], references: [id])
+  soilFamilyCodeId Int
 }
 
 model UserGameStat {
@@ -88,19 +114,22 @@ model Level {
 }
 
 enum QuestionCategory {
-  MUNSELL
-  DELINEATION
+  DIAGNOSTIC_HORIZONS
+  SOIL_FORM
+  LANDSCAPE_POSITION
+  SUITABILITY
 }
 
 model Question {
-  id          Int               @id @default(autoincrement())
-  category    QuestionCategory
-  basePoints  Int
-  description String
+  id         Int              @id @default(autoincrement())
+  category   QuestionCategory
+  orderIndex Int
+  prompt     String
 
   monolith   Monolith @relation(fields: [monolithId], references: [id])
   monolithId Int
 
+  options  AnswerOption[]
   attempts UserAttempt[]
 }
 
