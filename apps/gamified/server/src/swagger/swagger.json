@@ -130,19 +130,47 @@
 					"name": {
 						"type": "string"
 					},
+					"farmerName": {
+						"type": "string"
+					},
 					"orderIndex": {
 						"type": "number",
 						"format": "double"
 					},
 					"visited": {
 						"type": "boolean"
+					},
+					"completed": {
+						"type": "boolean"
 					}
 				},
 				"required": [
 					"id",
 					"name",
+					"farmerName",
 					"orderIndex",
-					"visited"
+					"visited",
+					"completed"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"SaveDetailsRequest": {
+				"properties": {
+					"username": {
+						"type": "string"
+					},
+					"firstName": {
+						"type": "string"
+					},
+					"lastName": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"username",
+					"firstName",
+					"lastName"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -523,6 +551,39 @@
 					}
 				],
 				"parameters": []
+			}
+		},
+		"/users/me/details": {
+			"put": {
+				"operationId": "SaveMyDetails",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/User"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/SaveDetailsRequest"
+							}
+						}
+					}
+				}
 			}
 		},
 		"/users/me/avatar": {

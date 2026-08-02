@@ -10,6 +10,7 @@ export class LevelRepository {
         id: true,
         levelNumber: true,
         title: true,
+        farmerName: true,
         soilFamilyCode: {
           select: {
             monolith: {
@@ -18,7 +19,9 @@ export class LevelRepository {
                   select: {
                     attempts: {
                       where: { userId },
-                      select: { id: true }
+                      select: {
+                        id: true, isCorrect: true 
+                      }
                     }
                   }
                 }
@@ -29,12 +32,17 @@ export class LevelRepository {
       }
     });
 
-    return levels.map((level) => ({
-      id: level.id,
-      name: level.title,
-      orderIndex: level.levelNumber,
-      visited: level.soilFamilyCode.monolith.questions.some((question) => question.attempts.length > 0)
-    }));
+    return levels.map((level) => {
+      const { questions } = level.soilFamilyCode.monolith;
+      return {
+        id: level.id,
+        name: level.title,
+        farmerName: level.farmerName,
+        orderIndex: level.levelNumber,
+        visited: questions.some((question) => question.attempts.length > 0),
+        completed: questions.length > 0 && questions.every((question) => question.attempts.some((attempt) => attempt.isCorrect))
+      };
+    });
   }
 
   public async findStartingLevelId(): Promise<number | null> {
