@@ -1,5 +1,7 @@
 import { BaseApi } from "./base.api";
 import { type User } from "../models/user.model";
+import { type UserStats } from "../models/user-stats.model";
+import { type FarmProgress } from "../models/farm.model";
 
 class UsersApi extends BaseApi {
   getUsers(accessToken: string): Promise<User[]> {
@@ -13,6 +15,20 @@ class UsersApi extends BaseApi {
     return this.post<User>(
       `users/sync`,
       {},
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
+  getMyStats(accessToken: string): Promise<UserStats> {
+    return this.get<UserStats>(
+      `users/me/stats`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
+  getMyFarms(accessToken: string): Promise<FarmProgress[]> {
+    return this.get<FarmProgress[]>(
+      `users/me/farms`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
   }

@@ -87,6 +87,7 @@ model SoilFamilyCode {
   monolithId Int      @unique
 
   fields SoilFamilyField[]
+  level  Level?
 }
 
 model SoilFamilyField {
@@ -112,11 +113,14 @@ model UserGameStat {
 
 model Level {
   id          Int    @id @default(autoincrement())
-  levelNumber Int
+  levelNumber Int    @unique
   title       String
   description String
   farmerName  String
   scenario    String
+
+  soilFamilyCode   SoilFamilyCode @relation(fields: [soilFamilyCodeId], references: [id])
+  soilFamilyCodeId Int            @unique
 
   userGameStats UserGameStat[]
 }

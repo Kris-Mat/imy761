@@ -1,7 +1,11 @@
 import { Controller, Route, Get, Post, Security, Request } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
 import { User } from '@shared/api/models/user.model';
+import { UserStats } from '@shared/api/models/user-stats.model';
+import { FarmProgress } from '@shared/api/models/farm.model';
 import { userService } from '@shared/server/src/services/user.service';
+import { userStatsService } from '@shared/server/src/services/user-stats.service';
+import { farmService } from '@shared/server/src/services/farm.service';
 import '@shared/server/src/middleware/auth.middleware';
 
 // Lives in this app's own package (not apps/shared/server) because tsx/esbuild
@@ -40,5 +44,17 @@ export class UserController extends Controller {
   public async syncUser(@Request() request: ExpressRequest): Promise<User> {
     // @Security('jwt') guarantees expressAuthentication has run and set request.user.
     return userService.syncFromSupabase(request.user!);
+  }
+
+  @Security('jwt')
+  @Get('me/stats')
+  public async getMyStats(@Request() request: ExpressRequest): Promise<UserStats> {
+    return userStatsService.getStatsForSupabaseUser(request.user!);
+  }
+
+  @Security('jwt')
+  @Get('me/farms')
+  public async getMyFarms(@Request() request: ExpressRequest): Promise<FarmProgress[]> {
+    return farmService.getFarmsForSupabaseUser(request.user!);
   }
 }

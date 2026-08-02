@@ -21,6 +21,14 @@ export class UserRepository {
     return getPrismaClient().user.create({ data });
   }
 
+  public async createGameStat(userId: number, levelId: number): Promise<void> {
+    await getPrismaClient().userGameStat.create({
+      data: {
+        userId, totalXp: 0, currentLevelId: levelId
+      }
+    });
+  }
+
 }
 
 export const userRepository = new UserRepository();

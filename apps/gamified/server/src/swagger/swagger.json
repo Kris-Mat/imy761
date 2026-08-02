@@ -52,6 +52,70 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"UserStats": {
+				"properties": {
+					"totalXp": {
+						"type": "number",
+						"format": "double"
+					},
+					"rank": {
+						"type": "string",
+						"nullable": true
+					},
+					"tasksCompleted": {
+						"type": "number",
+						"format": "double"
+					},
+					"correctAnswers": {
+						"type": "number",
+						"format": "double"
+					},
+					"currentStreak": {
+						"type": "number",
+						"format": "double"
+					},
+					"badgesEarned": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"totalXp",
+					"rank",
+					"tasksCompleted",
+					"correctAnswers",
+					"currentStreak",
+					"badgesEarned"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"FarmProgress": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					},
+					"visited": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"orderIndex",
+					"visited"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"HorizonCharacteristic": {
 				"properties": {
 					"id": {
@@ -350,6 +414,55 @@
 							"application/json": {
 								"schema": {
 									"$ref": "#/components/schemas/User"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/me/stats": {
+			"get": {
+				"operationId": "GetMyStats",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserStats"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/me/farms": {
+			"get": {
+				"operationId": "GetMyFarms",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/FarmProgress"
+									},
+									"type": "array"
 								}
 							}
 						}

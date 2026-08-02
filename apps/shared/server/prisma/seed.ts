@@ -47,6 +47,14 @@ interface SoilFamilyFieldSeed {
   correctValue: string;
 }
 
+interface LevelSeed {
+  levelNumber: number;
+  title: string;
+  description: string;
+  farmerName: string;
+  scenario: string;
+}
+
 interface MonolithSeed {
   name: string;
   imageUrl: string;
@@ -59,6 +67,9 @@ interface MonolithSeed {
     soilFamilyName: string;
     fields: SoilFamilyFieldSeed[];
   };
+  // The gamified app's "farm" for this soil profile — one level per
+  // soilFamilyCode, numbered to match the plain app's chapter order above.
+  level: LevelSeed;
 }
 
 const monoliths: MonolithSeed[] = [
@@ -167,9 +178,17 @@ const monoliths: MonolithSeed[] = [
           label: 'Textural contrast', correctValue: '1' 
         },
         {
-          label: 'Final family digit', correctValue: '0' 
+          label: 'Final family digit', correctValue: '0'
         }
       ]
+    },
+    level: {
+      levelNumber: 1,
+      title: 'Redridge Farm',
+      farmerName: 'Pieter Koekemoer',
+      description: 'A sprawling maize farm on the upper slopes, where deep red apedal soil drains freely and rarely lets the farmer down.',
+      scenario: "Pieter needs your help explaining why his maize yields are so consistent on Redridge Farm's upper slopes. "
+        + 'Investigate the horizon profile to confirm the diagnostic horizons, soil form, landscape position, and suitability for maize.'
     }
   },
   {
@@ -286,9 +305,17 @@ const monoliths: MonolithSeed[] = [
           label: 'Texture', correctValue: '3' 
         },
         {
-          label: 'Final family digit', correctValue: '0' 
+          label: 'Final family digit', correctValue: '0'
         }
       ]
+    },
+    level: {
+      levelNumber: 2,
+      title: 'Avalon Vale Farm',
+      farmerName: 'Nomsa Radebe',
+      description: 'A foot-slope soybean farm where a soft plinthic horizon holds onto seasonal moisture a little too well.',
+      scenario: "Nomsa has noticed her soybean fields waterlog after the rains. Study Avalon Vale Farm's horizons to identify "
+        + 'the soft plinthic layer and advise her on managing the seasonal wetness.'
     }
   },
   {
@@ -396,9 +423,17 @@ const monoliths: MonolithSeed[] = [
           label: 'Texture', correctValue: '2' 
         },
         {
-          label: 'Final family digit', correctValue: '0' 
+          label: 'Final family digit', correctValue: '0'
         }
       ]
+    },
+    level: {
+      levelNumber: 3,
+      title: 'Rensburg Vlei Farm',
+      farmerName: 'Willem Botha',
+      description: 'A low-lying pasture farm on heavy, gleyed clay that cracks in the dry season and floods in the wet.',
+      scenario: "Willem's cattle pasture struggles with drainage every wet season. Examine Rensburg Vlei Farm's vertic clay "
+        + 'horizons to determine why, and whether pasture is still the right choice here.'
     }
   }
 ];
@@ -414,6 +449,10 @@ async function main(): Promise<void> {
 
   // Content tables are reset and rebuilt on every seed run so re-seeding
   // stays reproducible while this content is still being finalised.
+  // userGameStat and level go first since level.soilFamilyCodeId FKs into
+  // the soilFamilyCode rows being rebuilt below.
+  await prisma.userGameStat.deleteMany();
+  await prisma.level.deleteMany();
   await prisma.soilFamilyField.deleteMany();
   await prisma.soilFamilyCode.deleteMany();
   await prisma.answerOption.deleteMany();
@@ -423,7 +462,8 @@ async function main(): Promise<void> {
   await prisma.monolith.deleteMany();
 
   for (const monolith of monoliths) {
-    await prisma.monolith.create({
+    const createdMonolith = await prisma.monolith.create({
+      include: { soilFamilyCode: true },
       data: {
         name: monolith.name,
         imageUrl: monolith.imageUrl,
@@ -467,6 +507,17 @@ async function main(): Promise<void> {
             }
           }
         }
+      }
+    });
+
+    await prisma.level.create({
+      data: {
+        levelNumber: monolith.level.levelNumber,
+        title: monolith.level.title,
+        description: monolith.level.description,
+        farmerName: monolith.level.farmerName,
+        scenario: monolith.level.scenario,
+        soilFamilyCodeId: createdMonolith.soilFamilyCode!.id
       }
     });
   }
