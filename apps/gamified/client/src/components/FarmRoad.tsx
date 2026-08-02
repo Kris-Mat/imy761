@@ -44,8 +44,8 @@ function FarmRoad({ farms }: FarmRoadProps) {
     <Box
       pos="relative"
       w="100%"
-      maw={440}
-      h={320}
+      maw={580}
+      h={420}
       mx="auto"
     >
       <svg

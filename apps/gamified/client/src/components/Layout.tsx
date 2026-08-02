@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Anchor, Box, Group } from '@mantine/core';
 import { NavLink as RouterNavLink, Outlet } from 'react-router';
 import { useHover } from '@mantine/hooks';
+import NiceAvatar, { genConfig } from 'react-nice-avatar';
+import type { AvatarFullConfig } from 'react-nice-avatar';
 import { Icon } from '@shared/ui/Icon';
 import { ScrollSmoother } from '../lib/gsap';
-import { UserProvider } from '../context/UserContext';
+import { UserProvider, useUser } from '../context/UserContext';
 
 function NavItem({ to, label, opacity }: { to: string; label: string; opacity: number; }) {
   return (
@@ -21,6 +23,34 @@ function NavItem({ to, label, opacity }: { to: string; label: string; opacity: n
       })}
     >
       {label}
+    </Anchor>
+  );
+}
+
+function ProfileNavAvatar({ opacity }: { opacity: number; }) {
+  const { user } = useUser();
+  const avatarConfig = useMemo(
+    () => genConfig((user?.avatarConfig ?? undefined) as AvatarFullConfig | undefined),
+    [user?.avatarConfig]
+  );
+
+  return (
+    <Anchor
+      component={RouterNavLink}
+      to="/profile"
+      underline="never"
+      style={({ isActive }: { isActive: boolean; }) => ({
+        opacity: isActive ? 1 : opacity,
+        transition: 'opacity 200ms ease',
+        display: 'flex'
+      })}
+    >
+      <NiceAvatar
+        {...avatarConfig}
+        style={{
+          width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--mantine-color-mustard-5)'
+        }}
+      />
     </Anchor>
   );
 }
@@ -79,11 +109,7 @@ function Layout() {
           label="Tests"
           opacity={hovered ? 0.75 : 0.15}
         />
-        <NavItem
-          to="/profile"
-          label="Profile"
-          opacity={hovered ? 0.75 : 0.15}
-        />
+        <ProfileNavAvatar opacity={hovered ? 0.75 : 0.15} />
       </Group>
 
       <div

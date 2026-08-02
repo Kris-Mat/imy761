@@ -1,5 +1,5 @@
 import { BaseApi } from "./base.api";
-import { type User } from "../models/user.model";
+import { type User, type AvatarConfig } from "../models/user.model";
 import { type UserStats } from "../models/user-stats.model";
 import { type FarmProgress } from "../models/farm.model";
 
@@ -29,6 +29,14 @@ class UsersApi extends BaseApi {
   getMyFarms(accessToken: string): Promise<FarmProgress[]> {
     return this.get<FarmProgress[]>(
       `users/me/farms`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
+  saveMyAvatar(accessToken: string, avatarConfig: AvatarConfig): Promise<AvatarConfig> {
+    return this.put<AvatarConfig>(
+      `users/me/avatar`,
+      { avatarConfig },
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
   }

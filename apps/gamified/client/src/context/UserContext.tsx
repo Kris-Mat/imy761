@@ -2,6 +2,7 @@ import {
   createContext, useContext, useEffect, useState
 } from 'react';
 import type { ReactNode } from 'react';
+import { genConfig } from 'react-nice-avatar';
 import { authApi } from '@shared/api/services/auth.api';
 import { userApi } from '@shared/api/services/users.api';
 import type { User } from '@shared/api/models/user.model';
@@ -60,6 +61,20 @@ export function UserProvider({ children }: { children: ReactNode; }) {
 
       try {
         const freshUser = await userApi.syncUser(accessToken);
+        if (cancelled) return;
+
+        // First login ever for this account: no avatar has been generated
+        // yet. Generate one now and persist it immediately so it's stable
+        // from here on — same config every time, until the (future) profile
+        // page changes it.
+        if (!freshUser.avatarConfig) {
+          try {
+            freshUser.avatarConfig = await userApi.saveMyAvatar(accessToken, genConfig());
+          } catch (error) {
+            console.error('Failed to save initial avatar', error);
+          }
+        }
+
         if (cancelled) return;
         setUser(freshUser);
         sessionStorage.setItem(userCacheKey(supabaseId), JSON.stringify(freshUser));

@@ -1,12 +1,25 @@
-import { Controller, Route, Get, Post, Security, Request } from 'tsoa';
+import {
+  Controller, Route, Get, Post, Put, Body, Security, Request
+} from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
-import { User } from '@shared/api/models/user.model';
+import { User, AvatarConfig } from '@shared/api/models/user.model';
 import { UserStats } from '@shared/api/models/user-stats.model';
 import { FarmProgress } from '@shared/api/models/farm.model';
 import { userService } from '@shared/server/src/services/user.service';
 import { userStatsService } from '@shared/server/src/services/user-stats.service';
 import { farmService } from '@shared/server/src/services/farm.service';
 import '@shared/server/src/middleware/auth.middleware';
+
+interface SaveAvatarRequest {
+  // Loosely typed on purpose: tsoa's runtime body validator doesn't reliably
+  // validate the AvatarConfig alias (a Record<string, ...> aliased through
+  // another Record alias) — every field trips "Could not match the union
+  // against any of the items" even for plain strings. The actual shape is
+  // opaque to the server anyway (defined by whichever avatar-generation
+  // library the client uses), so there's nothing meaningful to validate here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+  avatarConfig: Record<string, any>;
+}
 
 // Lives in this app's own package (not apps/shared/server) because tsx/esbuild
 // fails to transform parameter decorators (e.g. @Request()) on files loaded
@@ -56,5 +69,14 @@ export class UserController extends Controller {
   @Get('me/farms')
   public async getMyFarms(@Request() request: ExpressRequest): Promise<FarmProgress[]> {
     return farmService.getFarmsForSupabaseUser(request.user!);
+  }
+
+  @Security('jwt')
+  @Put('me/avatar')
+  public async saveMyAvatar(
+    @Request() request: ExpressRequest,
+    @Body() body: SaveAvatarRequest
+  ): Promise<AvatarConfig> {
+    return userService.saveAvatarConfig(request.user!, body.avatarConfig);
   }
 }

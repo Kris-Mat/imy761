@@ -1,6 +1,6 @@
 import { userRepository } from '../repositories/user.repository';
 import { levelRepository } from '../repositories/level.repository';
-import type { User } from '@shared/api/models/user.model';
+import type { User, AvatarConfig } from '@shared/api/models/user.model';
 import type { AuthenticatedUser } from '../middleware/auth.middleware';
 
 export class UserService {
@@ -41,6 +41,14 @@ export class UserService {
     }
 
     return user;
+  }
+
+  public async saveAvatarConfig(claims: AuthenticatedUser, avatarConfig: AvatarConfig): Promise<AvatarConfig> {
+    const user = await userRepository.findBySupabaseId(claims.sub);
+    if (!user) {
+      throw new Error('User not found; sync the user before saving an avatar');
+    }
+    return userRepository.upsertAvatarConfig(user.id, avatarConfig);
   }
 
 }

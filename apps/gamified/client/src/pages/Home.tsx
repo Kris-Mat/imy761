@@ -3,6 +3,7 @@ import {
   Box, Flex, SimpleGrid, Stack, Text, Title
 } from '@mantine/core';
 import NiceAvatar, { genConfig } from 'react-nice-avatar';
+import type { AvatarFullConfig } from 'react-nice-avatar';
 import MountainBackground from '../components/MountainBackground';
 import FarmRoad from '../components/FarmRoad';
 import StatCard from '../components/StatCard';
@@ -12,8 +13,12 @@ import { useUser } from '../context/UserContext';
 
 function Home() {
   const { user, stats, farms } = useUser();
-  // Random for now — will become user-editable once the profile page exists.
-  const avatarConfig = useMemo(() => genConfig(), []);
+  // Persisted per-user by UserContext on first login; genConfig() just fills
+  // in a temporary random one for the brief window before that resolves.
+  const avatarConfig = useMemo(
+    () => genConfig((user?.avatarConfig ?? undefined) as AvatarFullConfig | undefined),
+    [user?.avatarConfig]
+  );
 
   const displayStats = [
     {
@@ -105,48 +110,52 @@ function Home() {
           align="center"
           justify="space-between"
           gap={40}
-          maw={1200}
+          maw={1500}
           w="100%"
           mx="auto"
           style={{ zIndex: 1 }}
         >
-          <Stack
-            gap="xs"
-            maw={420}
+          <Flex
+            align="center"
+            gap={20}
+            maw={640}
           >
             <NiceAvatar
               {...avatarConfig}
+              bgColor='terracotta.7'
               style={{
-                width: 96, height: 96
+                width: 250, height: 250, flexShrink: 0, borderRadius: '50%', border: '3px solid var(--mantine-color-mustard-5)'
               }}
             />
-            <Stack gap={0}>
+            <Stack gap="xs">
+              <Stack gap={0}>
+                <Text
+                  fz="xl"
+                  fw={500}
+                  c="charcoal.7"
+                >
+                  Welcome back
+                </Text>
+                <Title
+                  order={1}
+                  fz={72}
+                  fw={800}
+                  lh={1.05}
+                  c="charcoal.9"
+                  style={{ letterSpacing: '-2px' }}
+                >
+                  {user?.username ?? ''}
+                </Title>
+              </Stack>
               <Text
-                fz="xl"
-                fw={500}
-                c="charcoal.7"
+                c="charcoal.6"
+                size="lg"
+                mt="sm"
               >
-                Welcome back
+                Your farms are waiting — pick up where you left off and keep the streak going.
               </Text>
-              <Title
-                order={1}
-                fz={72}
-                fw={800}
-                lh={1.05}
-                c="charcoal.9"
-                style={{ letterSpacing: '-2px' }}
-              >
-                {user?.username ?? ''}
-              </Title>
             </Stack>
-            <Text
-              c="charcoal.6"
-              size="lg"
-              mt="sm"
-            >
-              Your farms are waiting — pick up where you left off and keep the streak going.
-            </Text>
-          </Stack>
+          </Flex>
 
           <FarmRoad farms={farms ?? []} />
         </Flex>
