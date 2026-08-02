@@ -4,7 +4,7 @@ import type { User, AvatarConfig } from '@shared/api/models/user.model';
 
 const withPersonalisation = { personalisation: true } as const;
 
-type UserRow = Prisma.UserGetPayload<{ include: typeof withPersonalisation }>;
+type UserRow = Prisma.UserGetPayload<{ include: typeof withPersonalisation; }>;
 
 function toUser(row: UserRow): User {
   return {
