@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Box, Button, Divider, Flex, Group, Paper, Stack, Text, TextInput, UnstyledButton
 } from '@mantine/core';
@@ -43,6 +44,19 @@ function NavTabButton({ label, active, onClick }: { label: string; active: boole
 function ProfileContent() {
   const { user, farms, updateUser } = useUser();
   const [activeTab, setActiveTab] = useState<ProfileTab>('progress');
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await authApi.logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Failed to log out', error);
+      setLoggingOut(false);
+    }
+  }
 
   const persistedAvatarConfig = useMemo(
     () => genConfig((user?.avatarConfig ?? undefined) as AvatarFullConfig | undefined),
@@ -205,6 +219,18 @@ function ProfileContent() {
                 active={activeTab === 'avatar'}
                 onClick={() => selectTab('avatar')}
               />
+            </Stack>
+
+            <Stack mt="auto">
+              <Divider />
+              <Button
+                variant="subtle"
+                color="red"
+                loading={loggingOut}
+                onClick={handleLogout}
+              >
+                Log out
+              </Button>
             </Stack>
           </Stack>
 
