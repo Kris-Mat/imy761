@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Avatar, Box, Tooltip } from '@mantine/core';
 import type { FarmProgress } from '@shared/api/models/farm.model';
+import { useUser } from '../context/UserContext';
+import { useQuestProgress } from '../hooks/useQuestProgress';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
@@ -33,12 +36,25 @@ const avatarSize = 104;
 const photoSize = avatarSize - 14;
 
 function FarmRoad({ farms }: FarmRoadProps) {
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const { progress } = useQuestProgress(user?.supabaseId);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const nextFarmId = farms.find((farm) => !farm.visited)?.id;
 
   const pins = farms.slice(0, roadPositions.length).map((farm, i) => ({
     ...farm, ...roadPositions[i]
   }));
+
+  // Resumes on the first unanswered question for that farm, per the
+  // client-side progress tracked in useQuestProgress (there's no per-question
+  // attempt endpoint yet — see that hook's comment for why).
+  function currentStepFor(farmId: number) {
+    const answers = progress[farmId];
+    if (!answers) return 0;
+    const firstUnanswered = answers.findIndex((pickedOptionId) => pickedOptionId === undefined);
+    return firstUnanswered === -1 ? 0 : firstUnanswered;
+  }
 
   return (
     <Box
@@ -107,6 +123,7 @@ function FarmRoad({ farms }: FarmRoadProps) {
                 pos="relative"
                 onMouseEnter={() => setHoveredId(farm.id)}
                 onMouseLeave={() => setHoveredId(null)}
+                onClick={() => navigate(`/quests/${farm.id}/${currentStepFor(farm.id)}`)}
                 style={{
                   width: avatarSize,
                   height: avatarSize,
