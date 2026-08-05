@@ -17,6 +17,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(express.json());
 
 // 1. Serve the freshly generated Swagger UI spec file
 app.use('/docs', swaggerUi.serve, async (_req: Request, res: Response) => {

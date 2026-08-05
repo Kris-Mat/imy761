@@ -14,6 +14,28 @@
 					"USER"
 				]
 			},
+			"Record_string.string-or-number-or-boolean_": {
+				"properties": {},
+				"additionalProperties": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "number",
+							"format": "double"
+						},
+						{
+							"type": "boolean"
+						}
+					]
+				},
+				"type": "object",
+				"description": "Construct a type with a set of properties K of type T"
+			},
+			"AvatarConfig": {
+				"$ref": "#/components/schemas/Record_string.string-or-number-or-boolean_"
+			},
 			"User": {
 				"properties": {
 					"id": {
@@ -38,6 +60,14 @@
 					},
 					"role": {
 						"$ref": "#/components/schemas/Role"
+					},
+					"avatarConfig": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AvatarConfig"
+							}
+						],
+						"nullable": true
 					}
 				},
 				"required": [
@@ -47,7 +77,90 @@
 					"email",
 					"firstName",
 					"lastName",
-					"role"
+					"role",
+					"avatarConfig"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"UserStats": {
+				"properties": {
+					"totalXp": {
+						"type": "number",
+						"format": "double"
+					},
+					"rank": {
+						"type": "string",
+						"nullable": true
+					},
+					"tasksCompleted": {
+						"type": "number",
+						"format": "double"
+					},
+					"correctAnswers": {
+						"type": "number",
+						"format": "double"
+					},
+					"currentStreak": {
+						"type": "number",
+						"format": "double"
+					},
+					"badgesEarned": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"totalXp",
+					"rank",
+					"tasksCompleted",
+					"correctAnswers",
+					"currentStreak",
+					"badgesEarned"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"FarmProgress": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"orderIndex": {
+						"type": "number",
+						"format": "double"
+					},
+					"visited": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"orderIndex",
+					"visited"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Record_string.any_": {
+				"properties": {},
+				"additionalProperties": {},
+				"type": "object",
+				"description": "Construct a type with a set of properties K of type T"
+			},
+			"SaveAvatarRequest": {
+				"properties": {
+					"avatarConfig": {
+						"$ref": "#/components/schemas/Record_string.any_"
+					}
+				},
+				"required": [
+					"avatarConfig"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -361,6 +474,88 @@
 					}
 				],
 				"parameters": []
+			}
+		},
+		"/users/me/stats": {
+			"get": {
+				"operationId": "GetMyStats",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserStats"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/me/farms": {
+			"get": {
+				"operationId": "GetMyFarms",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/FarmProgress"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/me/avatar": {
+			"put": {
+				"operationId": "SaveMyAvatar",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AvatarConfig"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/SaveAvatarRequest"
+							}
+						}
+					}
+				}
 			}
 		},
 		"/monoliths": {

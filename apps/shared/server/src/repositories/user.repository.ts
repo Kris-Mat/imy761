@@ -1,14 +1,36 @@
+import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '../config/prisma';
-import type { User } from '@shared/api/models/user.model';
+import type { User, AvatarConfig } from '@shared/api/models/user.model';
+
+const withPersonalisation = { personalisation: true } as const;
+
+type UserRow = Prisma.UserGetPayload<{ include: typeof withPersonalisation; }>;
+
+function toUser(row: UserRow): User {
+  return {
+    id: row.id,
+    supabaseId: row.supabaseId,
+    username: row.username,
+    email: row.email,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    role: row.role,
+    avatarConfig: (row.personalisation?.avatarConfig as AvatarConfig | undefined) ?? null
+  };
+}
 
 export class UserRepository {
 
   public async findAll(): Promise<User[]> {
-    return getPrismaClient().user.findMany();
+    const rows = await getPrismaClient().user.findMany({ include: withPersonalisation });
+    return rows.map(toUser);
   }
 
   public async findBySupabaseId(supabaseId: string): Promise<User | null> {
-    return getPrismaClient().user.findUnique({ where: { supabaseId } });
+    const row = await getPrismaClient().user.findUnique({
+      where: { supabaseId }, include: withPersonalisation
+    });
+    return row ? toUser(row) : null;
   }
 
   public async createFromSupabase(data: {
@@ -18,7 +40,29 @@ export class UserRepository {
     firstName: string;
     lastName: string;
   }): Promise<User> {
-    return getPrismaClient().user.create({ data });
+    const row = await getPrismaClient().user.create({
+      data, include: withPersonalisation
+    });
+    return toUser(row);
+  }
+
+  public async createGameStat(userId: number, levelId: number): Promise<void> {
+    await getPrismaClient().userGameStat.create({
+      data: {
+        userId, totalXp: 0, currentLevelId: levelId
+      }
+    });
+  }
+
+  public async upsertAvatarConfig(userId: number, avatarConfig: AvatarConfig): Promise<AvatarConfig> {
+    const row = await getPrismaClient().userPersonalisation.upsert({
+      where: { userId },
+      update: { avatarConfig },
+      create: {
+        userId, avatarConfig
+      }
+    });
+    return row.avatarConfig as AvatarConfig;
   }
 
 }

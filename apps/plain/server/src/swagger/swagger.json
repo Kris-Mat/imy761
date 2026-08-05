@@ -14,6 +14,28 @@
 					"USER"
 				]
 			},
+			"Record_string.string-or-number-or-boolean_": {
+				"properties": {},
+				"additionalProperties": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "number",
+							"format": "double"
+						},
+						{
+							"type": "boolean"
+						}
+					]
+				},
+				"type": "object",
+				"description": "Construct a type with a set of properties K of type T"
+			},
+			"AvatarConfig": {
+				"$ref": "#/components/schemas/Record_string.string-or-number-or-boolean_"
+			},
 			"User": {
 				"properties": {
 					"id": {
@@ -38,6 +60,14 @@
 					},
 					"role": {
 						"$ref": "#/components/schemas/Role"
+					},
+					"avatarConfig": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AvatarConfig"
+							}
+						],
+						"nullable": true
 					}
 				},
 				"required": [
@@ -47,7 +77,8 @@
 					"email",
 					"firstName",
 					"lastName",
-					"role"
+					"role",
+					"avatarConfig"
 				],
 				"type": "object",
 				"additionalProperties": false
