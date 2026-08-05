@@ -1,5 +1,5 @@
 import { Title, Text, Card, SimpleGrid, Stack, Group, Button, Loader } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useContent } from '../context/ContentContext';
 
 const currentUserName = 'Jane Doe';
@@ -26,7 +26,7 @@ function Home() {
         </Text>
       </Title>
 
-      {loading && <Loader color="soil" />}
+      {loading && <Loader color="terracotta" />}
 
       <SimpleGrid
         cols={{
@@ -89,7 +89,7 @@ function Home() {
               <Button
                 component={Link}
                 to={`/tests/${nextMonolith.id}`}
-                color="soil"
+                color="terracotta"
                 radius="xl"
               >
                 {completedMonolithIds.length > 0 ? 'Continue' : 'Start'}

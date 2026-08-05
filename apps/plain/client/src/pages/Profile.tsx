@@ -40,7 +40,7 @@ function Profile() {
         <Stack w={260} gap={4}>
           <Avatar
             size={60}
-            color="soil"
+            color="terracotta"
             radius="xl"
             mb="sm"
           >
@@ -105,7 +105,7 @@ function Profile() {
             </List>
             <Button
               variant="light"
-              color="soil"
+              color="terracotta"
               radius="xl"
               w="fit-content"
             >+ edit goals

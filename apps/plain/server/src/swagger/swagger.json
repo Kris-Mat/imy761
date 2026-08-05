@@ -7,11 +7,22 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
+			"Role": {
+				"type": "string",
+				"enum": [
+					"ADMIN",
+					"USER"
+				]
+			},
 			"User": {
 				"properties": {
 					"id": {
 						"type": "number",
 						"format": "double"
+					},
+					"supabaseId": {
+						"type": "string",
+						"nullable": true
 					},
 					"username": {
 						"type": "string"
@@ -24,14 +35,19 @@
 					},
 					"lastName": {
 						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/Role"
 					}
 				},
 				"required": [
 					"id",
+					"supabaseId",
 					"username",
 					"email",
 					"firstName",
-					"lastName"
+					"lastName",
+					"role"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -281,7 +297,13 @@
 				"additionalProperties": false
 			}
 		},
-		"securitySchemes": {}
+		"securitySchemes": {
+			"jwt": {
+				"type": "apiKey",
+				"name": "Authorization",
+				"in": "header"
+			}
+		}
 	},
 	"info": {
 		"title": "plain-server",
@@ -310,7 +332,34 @@
 						}
 					}
 				},
-				"security": [],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/sync": {
+			"post": {
+				"operationId": "SyncUser",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/User"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
 				"parameters": []
 			}
 		},

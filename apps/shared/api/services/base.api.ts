@@ -5,23 +5,23 @@ export class BaseApi {
   private client: AxiosInstance = axios.create();
 
   async get<T>(
-    path: string, 
-    options: { 
-      queryParams?: Record<string, string>; 
+    path: string,
+    options: {
+      queryParams?: Record<string, string>;
+      headers?: Record<string, string>;
     } = {}
   ): Promise<T> {
-    const { queryParams = {}  } = options;
-    
+    const { queryParams = {}, headers } = options;
+
     try {
       const response = await this.client.get(`${this.apiBase}/${path}`, {
-        params: queryParams
+        params: queryParams,
+        headers
       });
       return response.data as T;
     } catch (error) {
       console.error('GET request failed', error);
-      throw new Error('GET request failed:', {
-        cause: error
-      });
+      throw new Error('GET request failed', { cause: error });
     }
   }
 
@@ -41,9 +41,7 @@ export class BaseApi {
       return response.data as T;
     } catch (error) {
       console.error('POST request failed', error);
-      throw new Error('POST request failed', {
-        cause: error
-      });
+      throw new Error('POST request failed', { cause: error });
     }
   }
 

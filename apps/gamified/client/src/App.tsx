@@ -3,10 +3,9 @@ import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
 import './App.css';
-import '@mantine/core/styles.css';
-import { MantineProvider } from '@mantine/core';
 import type { User } from '@shared/api/models/user.model';
 import { userApi } from '@shared/api/services/users.api';
+import { authApi } from '@shared/api/services/auth.api';
 import { Icon } from '@shared/ui/Icon';
 
 function App() {
@@ -14,9 +13,16 @@ function App() {
   const [users, setUsers] = useState<User[] | null>([]);
 
   const fetchAPI = async () => {
+    // GET /users requires a Supabase session; the demo list only renders once logged in.
+    const session = await authApi.getSession();
+    if (!session) {
+      setUsers(null);
+      return;
+    }
+
     let response = null;
     try {
-      response = await userApi.getUsers();
+      response = await userApi.getUsers(session.access_token);
     } catch (error) {
       console.error("Error getting users:", error);
     } finally {
@@ -25,11 +31,12 @@ function App() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchAPI awaits before setting state; this is a standard fetch-on-mount effect
     fetchAPI();
   }, []);
 
   return (
-    <MantineProvider>
+    <>
       <section id="center">
         <div className="hero">
           <img
@@ -166,7 +173,7 @@ function App() {
 
       <div className="ticks"></div>
       <section id="spacer"></section>
-    </MantineProvider>
+    </>
   );
 }
 

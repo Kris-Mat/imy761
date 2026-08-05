@@ -1,5 +1,5 @@
 import { Button, Stack, Text, Title } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 function Completed() {
   return (
@@ -17,7 +17,7 @@ function Completed() {
       <Button
         component={Link}
         to="/tests"
-        color="soil"
+        color="terracotta"
         radius="xl"
       >Back to Tests
       </Button>

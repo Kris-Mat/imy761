@@ -9,12 +9,19 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 model User {
-  id        Int    @id @default(autoincrement())
-  username  String
-  email     String @unique
-  firstName String
-  lastName  String
+  id         Int     @id @default(autoincrement())
+  supabaseId String? @unique
+  username   String
+  email      String  @unique
+  firstName  String
+  lastName   String
+  role       Role    @default(USER)
 
   gameStat     UserGameStat?
   attempts     UserAttempt[]

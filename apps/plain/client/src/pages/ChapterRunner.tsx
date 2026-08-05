@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import {
   Button, Card, Group, Image, Loader, Radio, Stack, Table, Text, TextInput, Title
 } from '@mantine/core';
@@ -318,7 +318,7 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
       <Group justify="space-between">
         <Button
           variant="outline"
-          color="soil"
+          color="terracotta"
           radius="xl"
           disabled={stepIndex === 0}
           onClick={() => goToStep(stepIndex - 1)}
@@ -326,7 +326,7 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
           Previous
         </Button>
         <Button
-          color="soil"
+          color="terracotta"
           radius="xl"
           onClick={handleNext}
         >
@@ -342,7 +342,7 @@ function ChapterRunner() {
   const { monoliths, loading } = useContent();
 
   if (loading) {
-    return <Loader color="soil" />;
+    return <Loader color="terracotta" />;
   }
 
   const monolith = monoliths.find((m) => String(m.id) === monolithId);

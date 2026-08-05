@@ -1,7 +1,10 @@
 {
   "entryFile": "server.ts",
   "noImplicitAdditionalProperties": "throw-on-extras",
-  "controllerPathGlobs": ["../../shared/server/src/controllers/**/*.controller.ts"],
+  "controllerPathGlobs": [
+    "src/controllers/**/*.controller.ts",
+    "../../shared/server/src/controllers/**/*.controller.ts"
+  ],
   "compilerOptions": {
     "paths": {
       "@shared/*": ["../../shared/*"]
@@ -11,9 +14,13 @@
   },
   "spec": {
     "outputDirectory": "src/swagger",
-    "specVersion": 3
+    "specVersion": 3,
+    "securityDefinitions": {
+      "jwt": { "type": "apiKey", "name": "Authorization", "in": "header" }
+    }
   },
   "routes": {
-    "routesDir": "src/swagger"
+    "routesDir": "src/swagger",
+    "authenticationModule": "../../shared/server/src/middleware/auth.middleware.ts"
   }
 }
