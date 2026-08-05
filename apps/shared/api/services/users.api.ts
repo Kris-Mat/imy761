@@ -33,6 +33,14 @@ class UsersApi extends BaseApi {
     );
   }
 
+  saveMyDetails(accessToken: string, details: { username: string; firstName: string; lastName: string; }): Promise<User> {
+    return this.put<User>(
+      `users/me/details`,
+      details,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
   saveMyAvatar(accessToken: string, avatarConfig: AvatarConfig): Promise<AvatarConfig> {
     return this.put<AvatarConfig>(
       `users/me/avatar`,

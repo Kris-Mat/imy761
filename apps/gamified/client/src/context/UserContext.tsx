@@ -1,5 +1,5 @@
 import {
-  createContext, useContext, useEffect, useState
+  createContext, useCallback, useContext, useEffect, useState
 } from 'react';
 import type { ReactNode } from 'react';
 import { genConfig } from 'react-nice-avatar';
@@ -14,6 +14,10 @@ interface UserContextValue {
   stats: UserStats | null;
   farms: FarmProgress[] | null;
   loading: boolean;
+  // Merges a partial update (e.g. after a Profile-page save) into the cached
+  // user without a full re-sync, so every consumer (nav avatar, hero, Profile
+  // sidebar) stays in step immediately.
+  updateUser: (patch: Partial<User>) => void;
 }
 
 const userContext = createContext<UserContextValue | undefined>(undefined);
@@ -131,9 +135,20 @@ export function UserProvider({ children }: { children: ReactNode; }) {
     };
   }, []);
 
+  const updateUser = useCallback((patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = {
+        ...prev, ...patch 
+      };
+      if (next.supabaseId) sessionStorage.setItem(userCacheKey(next.supabaseId), JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return (
     <userContext.Provider value={{
-      user, stats, farms, loading
+      user, stats, farms, loading, updateUser
     }}
     >
       {children}

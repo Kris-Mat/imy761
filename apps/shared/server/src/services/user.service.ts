@@ -43,6 +43,18 @@ export class UserService {
     return user;
   }
 
+  public async updateDetails(claims: AuthenticatedUser, data: {
+    username: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<User> {
+    const user = await userRepository.findBySupabaseId(claims.sub);
+    if (!user) {
+      throw new Error('User not found; sync the user before updating details');
+    }
+    return userRepository.updateDetails(user.id, data);
+  }
+
   public async saveAvatarConfig(claims: AuthenticatedUser, avatarConfig: AvatarConfig): Promise<AvatarConfig> {
     const user = await userRepository.findBySupabaseId(claims.sub);
     if (!user) {

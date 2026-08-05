@@ -10,6 +10,12 @@ import { userStatsService } from '@shared/server/src/services/user-stats.service
 import { farmService } from '@shared/server/src/services/farm.service';
 import '@shared/server/src/middleware/auth.middleware';
 
+interface SaveDetailsRequest {
+  username: string;
+  firstName: string;
+  lastName: string;
+}
+
 interface SaveAvatarRequest {
   // Loosely typed on purpose: tsoa's runtime body validator doesn't reliably
   // validate the AvatarConfig alias (a Record<string, ...> aliased through
@@ -69,6 +75,15 @@ export class UserController extends Controller {
   @Get('me/farms')
   public async getMyFarms(@Request() request: ExpressRequest): Promise<FarmProgress[]> {
     return farmService.getFarmsForSupabaseUser(request.user!);
+  }
+
+  @Security('jwt')
+  @Put('me/details')
+  public async saveMyDetails(
+    @Request() request: ExpressRequest,
+    @Body() body: SaveDetailsRequest
+  ): Promise<User> {
+    return userService.updateDetails(request.user!, body);
   }
 
   @Security('jwt')

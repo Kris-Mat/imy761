@@ -54,6 +54,19 @@ export class UserRepository {
     });
   }
 
+  public async updateDetails(userId: number, data: {
+    username: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<User> {
+    const row = await getPrismaClient().user.update({
+      where: { id: userId },
+      data,
+      include: withPersonalisation
+    });
+    return toUser(row);
+  }
+
   public async upsertAvatarConfig(userId: number, avatarConfig: AvatarConfig): Promise<AvatarConfig> {
     const row = await getPrismaClient().userPersonalisation.upsert({
       where: { userId },
