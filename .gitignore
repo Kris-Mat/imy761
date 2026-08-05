@@ -1,4 +1,6 @@
 node_modules
+.react-router
+*.tsbuildinfo
 
 .vscode/*
 !.vscode/extensions.json
@@ -6,6 +8,7 @@ node_modules
 .env
 
 claude.md
+.claude
 
 
 #repomix files

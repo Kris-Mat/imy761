@@ -7,7 +7,12 @@ import stylistic from "@stylistic/eslint-plugin";
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['**/dist', 'src/dataconnect-generated', 'src/dataconnect-generated-admin']),
+  globalIgnores([
+    '**/dist',
+    'src/dataconnect-generated',
+    'src/dataconnect-generated-admin',
+    '**/.react-router/**'
+  ]),
   {
     files: ['**/*.{ts,tsx,js}'],
     extends: [
@@ -154,7 +159,21 @@ export default defineConfig([
         }
       ],
       "arrow-parens": "off",
-      "stylistic/lines-around-comment": "off"
+      "stylistic/lines-around-comment": "off",
+      "stylistic/jsx-max-props-per-line": [
+        "error",
+        {
+          maximum: {
+            single: 2,
+            multi: 1
+          }
+        }
+      ],
+      "stylistic/jsx-first-prop-new-line": ["error", "multiline-multiprop"],
+      "stylistic/jsx-closing-bracket-location": ["error", "tag-aligned"],
+      "stylistic/jsx-closing-tag-location": ["error", "tag-aligned"],
+      "stylistic/jsx-indent-props": ["error", 2],
+      "stylistic/jsx-indent": ["error", 2]
     }
   },
   // Config for files that commonly use different naming conventions
