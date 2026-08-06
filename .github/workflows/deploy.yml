@@ -20,7 +20,7 @@ jobs:
       - name: Build clients and run type checks
         run: npm run build
       - name: Verify client build output is deployable
-        run: ./.github/scripts/verify-client-build.sh
+        run: bash .github/scripts/verify-client-build.sh
 
   migrate-db:
     needs: build-clients
