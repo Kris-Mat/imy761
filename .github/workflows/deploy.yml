@@ -5,7 +5,25 @@ on:
     branches: [ main ]
 
 jobs:
+  build-clients:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npm run db:generate
+      - name: Build clients and run type checks
+        run: npm run build
+      - name: Verify client build output is deployable
+        run: ./.github/scripts/verify-client-build.sh
+
   migrate-db:
+    needs: build-clients
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +50,11 @@ jobs:
     needs: migrate-db
     runs-on: ubuntu-latest
     steps:
+      - name: Trigger Render deploy - plain client
+        run: curl -f "${{ secrets.RENDER_DEPLOY_HOOK_PLAIN_CLIENT }}"
       - name: Trigger Render deploy - plain server
         run: curl -f "${{ secrets.RENDER_DEPLOY_HOOK_PLAIN_SERVER }}"
+      - name: Trigger Render deploy - gamified client
+        run: curl -f "${{ secrets.RENDER_DEPLOY_HOOK_GAMIFIED_CLIENT }}"
       - name: Trigger Render deploy - gamified server
         run: curl -f "${{ secrets.RENDER_DEPLOY_HOOK_GAMIFIED_SERVER }}"

@@ -30,7 +30,9 @@ jobs:
         run: npm ci
       - name: Generate Prisma client
         run: npm run db:generate
-      - name: Run Client Build and type  checks 
+      - name: Run Client Build and type  checks
         run: npm run build
+      - name: Verify client build output is deployable
+        run: ./.github/scripts/verify-client-build.sh
       - name: Build server routes (tsoa)
         run: npm run build:plain:server && npm run build:gamified:server
