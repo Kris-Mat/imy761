@@ -44,6 +44,25 @@ export class UserStatsRepository {
     return getPrismaClient().userAchievement.count({ where: { userId } });
   }
 
+  // The user's furthest-reached level. Every level is playable regardless of
+  // this — it exists only so passing a level can push the rank forward.
+  public async findCurrentLevelNumber(userId: number): Promise<number> {
+    const gameStat = await getPrismaClient().userGameStat.findUnique({
+      where: { userId },
+      select: { level: { select: { levelNumber: true } } }
+    });
+    // No game stat yet (e.g. seeded before Level 1 existed) — treat them as
+    // being on the first level.
+    return gameStat?.level.levelNumber ?? 1;
+  }
+
+  public async advanceCurrentLevel(userId: number, nextLevelId: number): Promise<void> {
+    await getPrismaClient().userGameStat.update({
+      where: { userId },
+      data: { currentLevelId: nextLevelId }
+    });
+  }
+
 }
 
 export const userStatsRepository = new UserStatsRepository();

@@ -60,6 +60,16 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "FarmQuestionProgress": {
+        "dataType": "refObject",
+        "properties": {
+            "questionId": {"dataType":"double","required":true},
+            "selectedOptionId": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
+            "isCorrect": {"dataType":"union","subSchemas":[{"dataType":"boolean"},{"dataType":"enum","enums":[null]}],"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "FarmProgress": {
         "dataType": "refObject",
         "properties": {
@@ -69,6 +79,8 @@ const models: TsoaRoute.Models = {
             "orderIndex": {"dataType":"double","required":true},
             "visited": {"dataType":"boolean","required":true},
             "completed": {"dataType":"boolean","required":true},
+            "scorePercent": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
+            "questions": {"dataType":"array","array":{"dataType":"refObject","ref":"FarmQuestionProgress"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -92,6 +104,23 @@ const models: TsoaRoute.Models = {
         "dataType": "refObject",
         "properties": {
             "avatarConfig": {"ref":"Record_string.any_","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "AttemptResult": {
+        "dataType": "refObject",
+        "properties": {
+            "isCorrect": {"dataType":"boolean","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "SubmitAttemptRequest": {
+        "dataType": "refObject",
+        "properties": {
+            "questionId": {"dataType":"double","required":true},
+            "selectedOptionId": {"dataType":"double","required":true},
         },
         "additionalProperties": false,
     },
@@ -379,6 +408,38 @@ export function RegisterRoutes(app: Router) {
 
               await templateService.apiHandler({
                 methodName: 'saveMyAvatar',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: undefined,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsUserController_submitAttempt: Record<string, TsoaRoute.ParameterSchema> = {
+                request: {"in":"request","name":"request","required":true,"dataType":"object"},
+                body: {"in":"body","name":"body","required":true,"ref":"SubmitAttemptRequest"},
+        };
+        app.post('/users/me/attempts',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(UserController)),
+            ...(fetchMiddlewares<RequestHandler>(UserController.prototype.submitAttempt)),
+
+            async function UserController_submitAttempt(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsUserController_submitAttempt, request, response });
+
+                const controller = new UserController();
+
+              await templateService.apiHandler({
+                methodName: 'submitAttempt',
                 controller,
                 response,
                 next,

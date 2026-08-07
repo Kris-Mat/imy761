@@ -121,6 +121,30 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"FarmQuestionProgress": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"selectedOptionId": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"isCorrect": {
+						"type": "boolean",
+						"nullable": true
+					}
+				},
+				"required": [
+					"questionId",
+					"selectedOptionId",
+					"isCorrect"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"FarmProgress": {
 				"properties": {
 					"id": {
@@ -142,6 +166,17 @@
 					},
 					"completed": {
 						"type": "boolean"
+					},
+					"scorePercent": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"questions": {
+						"items": {
+							"$ref": "#/components/schemas/FarmQuestionProgress"
+						},
+						"type": "array"
 					}
 				},
 				"required": [
@@ -150,7 +185,9 @@
 					"farmerName",
 					"orderIndex",
 					"visited",
-					"completed"
+					"completed",
+					"scorePercent",
+					"questions"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -189,6 +226,36 @@
 				},
 				"required": [
 					"avatarConfig"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"AttemptResult": {
+				"properties": {
+					"isCorrect": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"isCorrect"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"SubmitAttemptRequest": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"selectedOptionId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"questionId",
+					"selectedOptionId"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -613,6 +680,39 @@
 						"application/json": {
 							"schema": {
 								"$ref": "#/components/schemas/SaveAvatarRequest"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/users/me/attempts": {
+			"post": {
+				"operationId": "SubmitAttempt",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AttemptResult"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/SubmitAttemptRequest"
 							}
 						}
 					}

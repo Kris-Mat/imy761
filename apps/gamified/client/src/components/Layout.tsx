@@ -105,8 +105,8 @@ function Layout() {
           />
         </Anchor>
         <NavItem
-          to="/tests"
-          label="Tests"
+          to="/quests"
+          label="Quests"
           opacity={hovered ? 0.75 : 0.15}
         />
         <ProfileNavAvatar opacity={hovered ? 0.75 : 0.15} />
