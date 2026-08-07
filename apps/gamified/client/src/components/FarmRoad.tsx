@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Avatar, Box, Tooltip } from '@mantine/core';
 import type { FarmProgress } from '@shared/api/models/farm.model';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
@@ -32,7 +33,14 @@ const farmerImages: Record<number, string> = {
 const avatarSize = 104;
 const photoSize = avatarSize - 14;
 
+function tooltipLabel(farm: FarmProgress) {
+  if (farm.scorePercent !== null) return `${farm.name} — ${farm.scorePercent}%`;
+  if (farm.visited) return `${farm.name} — Visited`;
+  return `${farm.name} — Not visited yet`;
+}
+
 function FarmRoad({ farms }: FarmRoadProps) {
+  const navigate = useNavigate();
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const nextFarmId = farms.find((farm) => !farm.visited)?.id;
 
@@ -100,13 +108,14 @@ function FarmRoad({ farms }: FarmRoadProps) {
               />
             )}
             <Tooltip
-              label={`${farm.name} — ${farm.visited ? 'Visited' : 'Not visited yet'}`}
+              label={tooltipLabel(farm)}
               withArrow
             >
               <Box
                 pos="relative"
                 onMouseEnter={() => setHoveredId(farm.id)}
                 onMouseLeave={() => setHoveredId(null)}
+                onClick={() => navigate(`/quests/${farm.id}/0`)}
                 style={{
                   width: avatarSize,
                   height: avatarSize,

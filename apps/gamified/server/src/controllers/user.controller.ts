@@ -5,9 +5,11 @@ import type { Request as ExpressRequest } from 'express';
 import { User, AvatarConfig } from '@shared/api/models/user.model';
 import { UserStats } from '@shared/api/models/user-stats.model';
 import { FarmProgress } from '@shared/api/models/farm.model';
+import { AttemptResult, SubmitAttemptRequest } from '@shared/api/models/attempt.model';
 import { userService } from '@shared/server/src/services/user.service';
 import { userStatsService } from '@shared/server/src/services/user-stats.service';
 import { farmService } from '@shared/server/src/services/farm.service';
+import { attemptService } from '@shared/server/src/services/attempt.service';
 import '@shared/server/src/middleware/auth.middleware';
 
 interface SaveDetailsRequest {
@@ -93,5 +95,14 @@ export class UserController extends Controller {
     @Body() body: SaveAvatarRequest
   ): Promise<AvatarConfig> {
     return userService.saveAvatarConfig(request.user!, body.avatarConfig);
+  }
+
+  @Security('jwt')
+  @Post('me/attempts')
+  public async submitAttempt(
+    @Request() request: ExpressRequest,
+    @Body() body: SubmitAttemptRequest
+  ): Promise<AttemptResult> {
+    return attemptService.submitAttempt(request.user!, body.questionId, body.selectedOptionId);
   }
 }
