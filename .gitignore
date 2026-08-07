@@ -18,3 +18,5 @@ repomix-output.xml
 # personal notes
 notes.txt
 /docs
+build
+dist
