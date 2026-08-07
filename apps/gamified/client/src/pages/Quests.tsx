@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router';
 import {
   Accordion, Avatar, Badge, Box, Group, Loader, Stack, Text, Title, UnstyledButton
 } from '@mantine/core';
-import { Icon } from '@shared/ui/Icon';
+import { Icon, type IconName } from '@shared/ui/Icon';
 import { useUser } from '../context/UserContext';
 import { useMonoliths } from '../hooks/useMonoliths';
-import { useQuestProgress } from '../hooks/useQuestProgress';
 import { categoryLabels } from '../lib/questionCategory';
+import { hasAttempted, hasFinished } from '../lib/questProgress';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
@@ -52,11 +52,45 @@ function QuestionStatusIcon({ status }: { status: QuestionStatus; }) {
   );
 }
 
+// One tappable line in a quest's dropdown. Shared by the section entries
+// (Overview / Soil Profile / Summary) and the individual questions between them,
+// so they all read as a single list.
+function QuestRow({ icon, label, onClick }: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <UnstyledButton
+      onClick={onClick}
+      py={8}
+      px="xs"
+      style={{
+        borderRadius: 'var(--mantine-radius-sm)', cursor: 'pointer'
+      }}
+    >
+      <Group gap="sm">
+        {icon}
+        <Text c="charcoal.8">{label}</Text>
+      </Group>
+    </UnstyledButton>
+  );
+}
+
+function SectionIcon({ name }: { name: IconName; }) {
+  return (
+    <Icon
+      name={name}
+      size={18}
+      color="var(--mantine-color-terracotta-6)"
+    />
+  );
+}
+
 function Quests() {
   const navigate = useNavigate();
-  const { user, farms, loading: userLoading } = useUser();
+  const { farms, loading: userLoading } = useUser();
   const { monoliths, loading: monolithsLoading } = useMonoliths();
-  const { progress } = useQuestProgress(user?.supabaseId);
 
   const sortedFarms = useMemo(
     () => [...(farms ?? [])].sort((a, b) => a.orderIndex - b.orderIndex),
@@ -94,7 +128,8 @@ function Quests() {
             // (see prisma/seed.ts) — FarmProgress carries no monolith id, so
             // this is the only join available on the client.
             const monolith = monoliths.find((m) => m.orderIndex === farm.orderIndex);
-            const farmProgress = progress[farm.id];
+            const attempted = hasAttempted(farm);
+            const finished = hasFinished(farm);
 
             return (
               <Accordion.Item
@@ -118,13 +153,13 @@ function Quests() {
                     >
                       Quest {farm.orderIndex}: {farm.farmerName}
                     </Text>
-                    {farm.completed && (
+                    {farm.scorePercent !== null && (
                       <Badge
-                        color="moss"
+                        color={farm.scorePercent >= 75 ? 'moss' : 'terracotta'}
                         variant="light"
                         ml="auto"
                       >
-                        Completed
+                        {farm.scorePercent}%
                       </Badge>
                     )}
                   </Group>
@@ -140,27 +175,49 @@ function Quests() {
                   )}
                   {monolith && (
                     <Stack gap={4}>
+                      <QuestRow
+                        icon={<SectionIcon name="ChatCircleDots" />}
+                        label="Overview"
+                        onClick={() => navigate(`/quests/${farm.id}/0`)}
+                      />
+                      <QuestRow
+                        icon={<SectionIcon name="Stack" />}
+                        label="Soil Profile"
+                        onClick={() => navigate(`/quests/${farm.id}/0?phase=explore`)}
+                      />
                       {monolith.questions.map((question, index) => {
-                        const pickedOptionId = farmProgress?.[index];
-                        const status: QuestionStatus = pickedOptionId === undefined
-                          ? (farm.completed ? 'correct' : 'unanswered')
-                          : (question.options.find((option) => option.isCorrect)?.id === pickedOptionId ? 'correct' : 'incorrect');
+                        const questionProgress = farm.questions.find((entry) => entry.questionId === question.id);
+                        const status: QuestionStatus = questionProgress?.isCorrect === null || questionProgress === undefined
+                          ? 'unanswered'
+                          : (questionProgress.isCorrect ? 'correct' : 'incorrect');
+
+                        // Once a quest has been attempted, these rows are a way
+                        // back into that answer in review mode. Before then
+                        // there's nothing to review, so they just open the quest
+                        // at its overview.
+                        const target = attempted
+                          ? `/quests/${farm.id}/${index}?mode=review`
+                          : `/quests/${farm.id}/0`;
 
                         return (
-                          <UnstyledButton
+                          <QuestRow
                             key={question.id}
-                            onClick={() => navigate(`/quests/${farm.id}/${index}`)}
-                            py={8}
-                            px="xs"
-                            style={{ borderRadius: 'var(--mantine-radius-sm)' }}
-                          >
-                            <Group gap="sm">
-                              <QuestionStatusIcon status={status} />
-                              <Text c="charcoal.8">{categoryLabels[question.category]}</Text>
-                            </Group>
-                          </UnstyledButton>
+                            icon={<QuestionStatusIcon status={status} />}
+                            label={categoryLabels[question.category]}
+                            onClick={() => navigate(target)}
+                          />
                         );
                       })}
+                      {/* The farmer's closing review is only meaningful once
+                          there's a finished pass behind it — before that it
+                          would report 0% on a quest nobody has played. */}
+                      {finished && (
+                        <QuestRow
+                          icon={<SectionIcon name="Trophy" />}
+                          label="Summary"
+                          onClick={() => navigate(`/quests/${farm.id}/${monolith.questions.length}`)}
+                        />
+                      )}
                     </Stack>
                   )}
                 </Accordion.Panel>

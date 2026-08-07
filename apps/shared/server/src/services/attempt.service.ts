@@ -30,10 +30,7 @@ export class AttemptService {
       throw new Error('selectedOptionId does not belong to this question');
     }
 
-    const unlockedUpToLevelNumber = await userStatsRepository.findCurrentLevelNumber(user.id);
-    if (question.levelNumber > unlockedUpToLevelNumber) {
-      throw new Error('This quest is still locked');
-    }
+    const currentLevelNumber = await userStatsRepository.findCurrentLevelNumber(user.id);
 
     const isCorrect = selectedOption.isCorrect;
     await attemptRepository.create({
@@ -44,12 +41,12 @@ export class AttemptService {
       pointsEarned: isCorrect ? POINTS_PER_CORRECT_ANSWER : 0
     });
 
-    // Sticky unlock: advancing the frontier is only ever evaluated for the
-    // level the user is currently working through. Replaying an
-    // already-passed level (levelNumber < frontier) can't re-lock or
-    // re-advance anything, and a level beyond the frontier was already
-    // rejected above.
-    if (question.levelNumber === unlockedUpToLevelNumber) {
+    // Levels are all playable in any order, so currentLevelId is no longer a
+    // gate — it's the user's furthest-reached level, which surfaces as their
+    // rank (UserStats.rank comes from this level's title). It therefore only
+    // ever moves forward: replaying an earlier level can't pull the rank back
+    // down, but passing a later one out of order does push it up.
+    if (question.levelNumber >= currentLevelNumber) {
       const scorePercent = await levelRepository.findScoreForLevel(question.levelId, user.id);
       if (scorePercent >= PASSING_SCORE_PERCENT) {
         const nextLevel = await levelRepository.findByLevelNumber(question.levelNumber + 1);

@@ -18,6 +18,11 @@ interface UserContextValue {
   // user without a full re-sync, so every consumer (nav avatar, hero, Profile
   // sidebar) stays in step immediately.
   updateUser: (patch: Partial<User>) => void;
+  // Re-fetches farms from the server and updates both state and the
+  // sessionStorage cache — used after finishing a quest, since scoring and
+  // unlocking happen server-side and the cached farms list would otherwise
+  // stay stale for the rest of the session.
+  refreshFarms: () => Promise<void>;
 }
 
 const userContext = createContext<UserContextValue | undefined>(undefined);
@@ -139,16 +144,28 @@ export function UserProvider({ children }: { children: ReactNode; }) {
     setUser((prev) => {
       if (!prev) return prev;
       const next = {
-        ...prev, ...patch 
+        ...prev, ...patch
       };
       if (next.supabaseId) sessionStorage.setItem(userCacheKey(next.supabaseId), JSON.stringify(next));
       return next;
     });
   }, []);
 
+  const refreshFarms = useCallback(async () => {
+    const session = await authApi.getSession();
+    if (!session) return;
+    try {
+      const freshFarms = await userApi.getMyFarms(session.access_token);
+      setFarms(freshFarms);
+      sessionStorage.setItem(farmsCacheKey(session.user.id), JSON.stringify(freshFarms));
+    } catch (error) {
+      console.error('Failed to refresh farms', error);
+    }
+  }, []);
+
   return (
     <userContext.Provider value={{
-      user, stats, farms, loading, updateUser
+      user, stats, farms, loading, updateUser, refreshFarms
     }}
     >
       {children}

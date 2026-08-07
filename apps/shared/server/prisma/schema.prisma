@@ -85,6 +85,8 @@ model AnswerOption {
 
   question   Question @relation(fields: [questionId], references: [id])
   questionId Int
+
+  attempts UserAttempt[]
 }
 
 model SoilFamilyCode {
@@ -166,6 +168,13 @@ model UserAttempt {
 
   question   Question @relation(fields: [questionId], references: [id])
   questionId Int
+
+  // Which AnswerOption the user actually picked — nullable so existing rows
+  // (recorded before this column existed) and set null on delete if the
+  // option itself is ever removed. isCorrect is denormalised at write time
+  // rather than derived from this, so scoring still works even if it is null.
+  selectedOption   AnswerOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+  selectedOptionId Int?
 }
 
 model AchievementMaster {

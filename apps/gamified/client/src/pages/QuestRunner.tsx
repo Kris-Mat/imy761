@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
-  ActionIcon, Avatar, Box, Button, Card, Flex, Group, Image, Loader, Paper, Progress, Radio, Stack, Text, Title, UnstyledButton
+  Avatar, Box, Button, Card, Flex, Group, HoverCard, Image, Loader, Paper, Progress, Radio, Stack, Text, Title, UnstyledButton
 } from '@mantine/core';
+import type { FarmProgress } from '@shared/api/models/farm.model';
 import type { Horizon, Monolith, Question } from '@shared/api/models/monolith.model';
+import { authApi } from '@shared/api/services/auth.api';
+import { userApi } from '@shared/api/services/users.api';
 import { Icon } from '@shared/ui/Icon';
 import { useUser } from '../context/UserContext';
 import { useMonoliths } from '../hooks/useMonoliths';
-import { useQuestProgress } from '../hooks/useQuestProgress';
 import { categoryLabels } from '../lib/questionCategory';
+import { hasAttempted, hasFinished } from '../lib/questProgress';
 import MunsellChip from '../components/MunsellChip';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
@@ -23,6 +26,17 @@ const farmerImages: Record<number, string> = {
 };
 
 type Phase = 'intro' | 'explore' | 'question';
+
+// 'play' records new attempts and never shows what was answered previously —
+// every run through a quest, first or retry, is a clean slate. 'review' is
+// read-only: it replays the stored answers with their right/wrong marking and
+// submits nothing.
+type Mode = 'play' | 'review';
+
+// Mirrors AttemptService's PASSING_SCORE_PERCENT on the server. Nothing is
+// gated on it — every quest is playable in any order — it only colours the
+// harvest bar and picks which message the farmer gives at the end.
+const PASSING_SCORE_PERCENT = 75;
 
 function FarmerPortrait({ farmerName, farmOrderIndex }: { farmerName: string; farmOrderIndex: number; }) {
   return (
@@ -90,6 +104,41 @@ function AssistantPortrait() {
   );
 }
 
+// Horizons are drawn as equal-height slices over the monolith image, top to
+// bottom in the order they're listed. Shared by the explore step (click to
+// select) and the in-question reference (hover to peek).
+function horizonBand(index: number, count: number) {
+  const height = 100 / count;
+  return {
+    top: `${height * index}%`, h: `${height}%`
+  };
+}
+
+function HorizonDetails({ horizon }: { horizon: Horizon; }) {
+  return (
+    <Stack gap="xs">
+      <Title order={4}>{horizon.label}</Title>
+      <MunsellChip
+        colourText={horizon.colourText}
+        hue={horizon.colourHue}
+        value={horizon.colourValue}
+        chroma={horizon.colourChroma}
+      />
+      {horizon.characteristics.map((characteristic) => (
+        <Text
+          key={characteristic.id}
+          size="sm"
+        >
+          &bull; {characteristic.text}
+        </Text>
+      ))}
+    </Stack>
+  );
+}
+
+// The same profile the explore step shows, kept beside the questions so the
+// horizon details stay reachable without leaving the question — hover only, so
+// it can't be mistaken for part of answering.
 function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
   return (
     <Stack
@@ -98,29 +147,71 @@ function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
       w={170}
       style={{ flexShrink: 0 }}
     >
-      <Image
-        src={monolith.imageUrl}
-        alt={`${monolith.name} soil profile`}
+      <Box
+        pos="relative"
         w={150}
-        radius="md"
-        style={{ border: '1px solid var(--mantine-color-charcoal-2)' }}
-      />
+      >
+        <Image
+          src={monolith.imageUrl}
+          alt={`${monolith.name} soil profile`}
+          radius="md"
+          style={{ border: '1px solid var(--mantine-color-charcoal-2)' }}
+        />
+        {monolith.horizons.map((horizon, index) => {
+          const { top, h } = horizonBand(index, monolith.horizons.length);
+          return (
+            <HoverCard
+              key={horizon.id}
+              width={280}
+              position="right"
+              withArrow
+              shadow="md"
+              openDelay={80}
+            >
+              <HoverCard.Target>
+                <Box
+                  pos="absolute"
+                  left={0}
+                  right={0}
+                  top={top}
+                  h={h}
+                  aria-label={horizon.label}
+                  style={{
+                    borderRadius: 4,
+                    border: '1px dashed var(--mantine-color-charcoal-3)',
+                    cursor: 'help'
+                  }}
+                />
+              </HoverCard.Target>
+              <HoverCard.Dropdown>
+                <HorizonDetails horizon={horizon} />
+              </HoverCard.Dropdown>
+            </HoverCard>
+          );
+        })}
+      </Box>
       <Text
         fz="xs"
         c="charcoal.5"
         ta="center"
       >
-        {monolith.name} profile
+        {monolith.name} profile — hover a layer for its details
       </Text>
     </Stack>
   );
 }
 
-function IntroStep({ farmerName, farmOrderIndex, message, onContinue }: {
+function IntroStep({
+  farmerName, farmOrderIndex, message, startLabel, onContinue, onReview
+}: {
   farmerName: string;
   farmOrderIndex: number;
   message: string;
+  startLabel: string;
   onContinue: () => void;
+  // Omitted until the user has answered every question here — there's no
+  // finished pass to review before that.
+  onReview?: () => void;
 }) {
   return (
     <Stack
@@ -147,21 +238,39 @@ function IntroStep({ farmerName, farmOrderIndex, message, onContinue }: {
           <Text c="charcoal.8">{message}</Text>
         </Paper>
       </Flex>
-      <Button
-        color="terracotta"
-        radius="xl"
-        onClick={onContinue}
+      <Group
+        gap="sm"
+        justify="center"
       >
-        Continue
-      </Button>
+        {onReview && (
+          <Button
+            variant="light"
+            color="moss"
+            radius="xl"
+            onClick={onReview}
+          >
+            Review Answers
+          </Button>
+        )}
+        <Button
+          color="terracotta"
+          radius="xl"
+          onClick={onContinue}
+        >
+          {startLabel}
+        </Button>
+      </Group>
     </Stack>
   );
 }
 
-function ExploreStep({ monolith, onContinue }: { monolith: Monolith; onContinue: () => void; }) {
+function ExploreStep({ monolith, continueLabel, onContinue }: {
+  monolith: Monolith;
+  continueLabel: string;
+  onContinue: () => void;
+}) {
   const [activeHorizonId, setActiveHorizonId] = useState<number | null>(monolith.horizons[0]?.id ?? null);
   const activeHorizon: Horizon | undefined = monolith.horizons.find((h) => h.id === activeHorizonId);
-  const bandHeight = 100 / monolith.horizons.length;
 
   return (
     <Stack
@@ -192,6 +301,7 @@ function ExploreStep({ monolith, onContinue }: { monolith: Monolith; onContinue:
           />
           {monolith.horizons.map((horizon, index) => {
             const isActive = horizon.id === activeHorizonId;
+            const { top, h } = horizonBand(index, monolith.horizons.length);
             return (
               <UnstyledButton
                 key={horizon.id}
@@ -200,8 +310,8 @@ function ExploreStep({ monolith, onContinue }: { monolith: Monolith; onContinue:
                 pos="absolute"
                 left={0}
                 right={0}
-                top={`${bandHeight * index}%`}
-                h={`${bandHeight}%`}
+                top={top}
+                h={h}
                 style={{
                   borderRadius: 6,
                   border: isActive
@@ -222,23 +332,7 @@ function ExploreStep({ monolith, onContinue }: { monolith: Monolith; onContinue:
           w={280}
         >
           {activeHorizon ? (
-            <Stack gap="xs">
-              <Title order={4}>{activeHorizon.label}</Title>
-              <MunsellChip
-                colourText={activeHorizon.colourText}
-                hue={activeHorizon.colourHue}
-                value={activeHorizon.colourValue}
-                chroma={activeHorizon.colourChroma}
-              />
-              {activeHorizon.characteristics.map((characteristic) => (
-                <Text
-                  key={characteristic.id}
-                  size="sm"
-                >
-                  &bull; {characteristic.text}
-                </Text>
-              ))}
-            </Stack>
+            <HorizonDetails horizon={activeHorizon} />
           ) : (
             <Text
               c="charcoal.5"
@@ -254,7 +348,7 @@ function ExploreStep({ monolith, onContinue }: { monolith: Monolith; onContinue:
         radius="xl"
         onClick={onContinue}
       >
-        Continue
+        {continueLabel}
       </Button>
     </Stack>
   );
@@ -278,12 +372,14 @@ interface QuestionStepProps {
   selectedOptionId: string | null;
   onSelect: (value: string) => void;
   revealed: boolean;
-  isCorrect: boolean;
   error: string | null;
+  // Review mode reached a question the user skipped on their last pass, so
+  // there's no answer of theirs to mark up.
+  unanswered: boolean;
 }
 
 function QuestionStep({
-  monolith, question, selectedOptionId, onSelect, revealed, isCorrect, error
+  monolith, question, selectedOptionId, onSelect, revealed, error, unanswered
 }: QuestionStepProps) {
   return (
     <Flex
@@ -332,7 +428,9 @@ function QuestionStep({
                   radius="xl"
                   p="md"
                   style={{
-                    pointerEvents: revealed ? 'none' : undefined,
+                    // `unanswered` only happens in review, where there's
+                    // nothing to reveal but the options must still be inert.
+                    pointerEvents: revealed || unanswered ? 'none' : undefined,
                     border: borderColor ? `2px solid ${borderColor}` : undefined
                   }}
                 >
@@ -346,12 +444,12 @@ function QuestionStep({
           </Stack>
         </Radio.Group>
         {error && <Text c="red.7">{error}</Text>}
-        {revealed && (
+        {unanswered && (
           <Text
             fw={600}
-            c={isCorrect ? 'green.7' : 'red.7'}
+            c="charcoal.6"
           >
-            {isCorrect ? 'Correct!' : 'Incorrect — the correct answer is outlined in green.'}
+            You didn&rsquo;t answer this question.
           </Text>
         )}
       </Stack>
@@ -360,7 +458,7 @@ function QuestionStep({
 }
 
 function harvestBarColor(percent: number): string {
-  if (percent >= 75) return 'moss';
+  if (percent >= PASSING_SCORE_PERCENT) return 'moss';
   if (percent >= 50) return 'mustard';
   return 'terracotta';
 }
@@ -369,7 +467,7 @@ function farmerScoreMessage(percent: number, farmName: string): string {
   if (percent === 100) {
     return `Perfect! You picked up on everything happening at ${farmName} — I couldn't have explained it better myself.`;
   }
-  if (percent >= 75) {
+  if (percent >= PASSING_SCORE_PERCENT) {
     return `Great work — you clearly understand most of what's going on at ${farmName}. Just a couple of details to brush up on.`;
   }
   if (percent >= 50) {
@@ -384,12 +482,14 @@ interface CompletionStepProps {
   farmName: string;
   correctCount: number;
   total: number;
-  buttonLabel: string;
+  continueLabel: string;
   onContinue: () => void;
+  onRetry: () => void;
+  onReview: () => void;
 }
 
 function CompletionStep({
-  farmerName, farmOrderIndex, farmName, correctCount, total, buttonLabel, onContinue
+  farmerName, farmOrderIndex, farmName, correctCount, total, continueLabel, onContinue, onRetry, onReview
 }: CompletionStepProps) {
   const percent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
 
@@ -460,73 +560,141 @@ function CompletionStep({
           <Text c="charcoal.8">{farmerScoreMessage(percent, farmName)}</Text>
         </Paper>
       </Flex>
-      <Button
-        color="terracotta"
-        radius="xl"
-        onClick={onContinue}
+      <Group
+        gap="sm"
+        justify="center"
       >
-        {buttonLabel}
-      </Button>
+        <Button
+          variant="light"
+          color="moss"
+          radius="xl"
+          onClick={onReview}
+        >
+          Review Answers
+        </Button>
+        <Button
+          variant="light"
+          color="terracotta"
+          radius="xl"
+          onClick={onRetry}
+        >
+          Retry Quest
+        </Button>
+        <Button
+          color="terracotta"
+          radius="xl"
+          onClick={onContinue}
+        >
+          {continueLabel}
+        </Button>
+      </Group>
     </Stack>
   );
 }
 
 interface QuestRunnerInnerProps {
-  farmId: number;
-  farmName: string;
-  farmerName: string;
-  farmOrderIndex: number;
+  farm: FarmProgress;
   monolith: Monolith;
   stepIndex: number;
-  nextFarmId: number | undefined;
-  progress: Record<number, (number | undefined)[]>;
-  markAnswered: (farmId: number, questionIndex: number, selectedOptionId: number, questionCount: number) => void;
+  mode: Mode;
+  // Set when the Quests page linked directly at a section; otherwise the phase
+  // follows the normal intro -> explore -> question walk.
+  initialPhase: Phase | undefined;
+  nextFarm: FarmProgress | undefined;
+  refreshFarms: () => Promise<void>;
 }
 
 function QuestRunnerInner({
-  farmId, farmName, farmerName, farmOrderIndex, monolith, stepIndex, nextFarmId, progress, markAnswered
+  farm, monolith, stepIndex, mode, initialPhase, nextFarm, refreshFarms
 }: QuestRunnerInnerProps) {
   const navigate = useNavigate();
+  const {
+    id: farmId, name: farmName, farmerName, orderIndex: farmOrderIndex
+  } = farm;
 
   const questions = monolith.questions;
   const total = questions.length;
   const isComplete = stepIndex >= total;
   const question = isComplete ? undefined : questions[stepIndex];
-  const storedOptionId = progress[farmId]?.[stepIndex];
+  const isReview = mode === 'review';
 
-  // QuestRunnerInner is remounted (via a `${farm.id}-${stepIndex}` key in
-  // QuestRunner below) whenever the step changes, so these reset for free —
-  // no effect needed to sync them back when stepIndex changes.
-  const [phase, setPhase] = useState<Phase>(stepIndex === 0 ? 'intro' : 'question');
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(
-    storedOptionId !== undefined ? String(storedOptionId) : null
+  // Only ever consulted in review mode. In play mode a previous answer must
+  // stay invisible — pre-filling it here is exactly what makes a retry feel
+  // like a continuation instead of a fresh attempt.
+  const storedOptionId = isReview && question
+    ? farm.questions.find((q) => q.questionId === question.id)?.selectedOptionId ?? null
+    : null;
+
+  // QuestRunnerInner is remounted (via a `${farm.id}-${stepIndex}-${mode}` key
+  // in QuestRunner below) whenever the step or mode changes, so these reset for
+  // free — no effect needed to sync them back.
+  //
+  // Review jumps straight to the answer: the farmer's overview is the entry
+  // point for playing a quest, not for re-reading one.
+  const [phase, setPhase] = useState<Phase>(
+    initialPhase ?? (stepIndex === 0 && !isReview ? 'intro' : 'question')
   );
-  const [revealed, setRevealed] = useState(storedOptionId !== undefined);
+  const linkedToProfile = initialPhase === 'explore';
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(
+    storedOptionId != null ? String(storedOptionId) : null
+  );
+  const [revealed, setRevealed] = useState(storedOptionId != null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Scoring happens server-side, so this farm's fresh score only exists once
+  // refreshFarms() resolves — until then, show a loader rather than a stale
+  // (pre-quest) score.
+  const [scoreLoading, setScoreLoading] = useState(isComplete);
+
+  useEffect(() => {
+    if (!isComplete) return;
+    let cancelled = false;
+    refreshFarms().finally(() => {
+      if (!cancelled) setScoreLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isComplete, refreshFarms]);
 
   function goToStep(index: number) {
-    navigate(`/quests/${farmId}/${index}`);
+    navigate(`/quests/${farmId}/${index}${isReview ? '?mode=review' : ''}`);
   }
 
-  function handleSubmitAnswer() {
+  // Both drop any ?mode, so a retry always starts a clean play run.
+  function startReview() {
+    navigate(`/quests/${farmId}/0?mode=review`);
+  }
+
+  function startRetry() {
+    navigate(`/quests/${farmId}/0`);
+  }
+
+  async function handleSubmitAnswer() {
     if (!question) return;
     if (!selectedOptionId) {
       setError('Please select an answer.');
       return;
     }
     setError(null);
-    setRevealed(true);
-    markAnswered(farmId, stepIndex, Number(selectedOptionId), total);
+    setSubmitting(true);
+    try {
+      const session = await authApi.getSession();
+      if (!session) throw new Error('Not authenticated');
+      await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId));
+      setRevealed(true);
+    } catch (submitError) {
+      console.error('Failed to submit attempt', submitError);
+      setError('Failed to submit your answer. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  const correctOptionId = question?.options.find((option) => option.isCorrect)?.id;
-  const isCorrect = revealed && correctOptionId !== undefined && String(correctOptionId) === selectedOptionId;
-
-  const answers = progress[farmId] ?? [];
-  const correctCount = questions.filter((q, index) => {
-    const picked = answers[index];
-    return picked !== undefined && q.options.find((option) => option.isCorrect)?.id === picked;
-  }).length;
+  const correctCount = farm.questions.filter((q) => q.isCorrect).length;
+  const attempted = hasAttempted(farm);
+  const finished = hasFinished(farm);
 
   return (
     <Stack
@@ -548,53 +716,40 @@ function QuestRunnerInner({
         style={{ overflow: 'hidden' }}
       >
         <Group
-          justify="space-between"
+          justify="center"
           px="md"
           py="xs"
           style={{ borderBottom: '1px solid var(--mantine-color-charcoal-2)' }}
         >
-          <ActionIcon
-            variant="subtle"
-            color="charcoal"
-            disabled={stepIndex <= 0}
-            onClick={() => goToStep(stepIndex - 1)}
-            aria-label="Previous day"
-          >
-            <Icon
-              name="CaretLeft"
-              size={18}
-            />
-          </ActionIcon>
           <Text
             fw={700}
             c="charcoal.8"
           >
             {isComplete ? 'Day Complete' : `Day ${stepIndex + 1}: ${categoryLabels[question!.category]}`}
+            {isReview && ' — Review'}
           </Text>
-          <ActionIcon
-            variant="subtle"
-            color="charcoal"
-            disabled={stepIndex >= total}
-            onClick={() => goToStep(stepIndex + 1)}
-            aria-label="Next day"
-          >
-            <Icon
-              name="CaretRight"
-              size={18}
-            />
-          </ActionIcon>
         </Group>
 
         <Box p="xl">
-          {isComplete && (
+          {isComplete && scoreLoading && (
+            <Stack
+              align="center"
+              py="xl"
+            >
+              <Loader color="terracotta" />
+            </Stack>
+          )}
+          {isComplete && !scoreLoading && (
             <CompletionStep
               farmerName={farmerName}
               farmOrderIndex={farmOrderIndex}
               farmName={farmName}
               correctCount={correctCount}
               total={total}
-              buttonLabel={nextFarmId ? 'Next Quest' : 'Back to Quests'}
-              onContinue={() => (nextFarmId ? navigate(`/quests/${nextFarmId}/0`) : navigate('/quests'))}
+              continueLabel={nextFarm ? 'Next Quest' : 'Back to Quests'}
+              onContinue={() => navigate(nextFarm ? `/quests/${nextFarm.id}/0` : '/quests')}
+              onRetry={startRetry}
+              onReview={startReview}
             />
           )}
           {!isComplete && phase === 'intro' && (
@@ -602,13 +757,20 @@ function QuestRunnerInner({
               farmerName={farmerName}
               farmOrderIndex={farmOrderIndex}
               message={`Every season I run into trouble on ${farmName}. Can you help me work out what's going on with my soil?`}
+              startLabel={attempted ? 'Retry Quest' : 'Start Quest'}
               onContinue={() => setPhase('explore')}
+              onReview={finished ? startReview : undefined}
             />
           )}
           {!isComplete && phase === 'explore' && (
             <ExploreStep
               monolith={monolith}
-              onContinue={() => setPhase('question')}
+              // Linked straight here from the Quests dropdown, this is a
+              // read-the-profile visit, not the middle of a run — walking on
+              // into the questions would start recording a new attempt the user
+              // never asked for. Send them back instead.
+              continueLabel={linkedToProfile ? 'Back to Quests' : 'Continue'}
+              onContinue={() => (linkedToProfile ? navigate('/quests') : setPhase('question'))}
             />
           )}
           {!isComplete && phase === 'question' && question && (
@@ -621,8 +783,8 @@ function QuestRunnerInner({
                 setError(null);
               }}
               revealed={revealed}
-              isCorrect={isCorrect}
               error={error}
+              unanswered={isReview && storedOptionId === null}
             />
           )}
         </Box>
@@ -636,18 +798,35 @@ function QuestRunnerInner({
             radius="xl"
             onClick={() => navigate('/quests')}
           >
-            Exit Quest
+            {isReview ? 'Exit Review' : 'Exit Quest'}
           </Button>
-          {!revealed && (
+          {/* Only review needs to step backwards — a play run is a fresh
+              attempt, so there's nothing behind you to go back and look at. */}
+          {isReview && stepIndex > 0 && (
+            <Button
+              variant="light"
+              color="charcoal"
+              radius="xl"
+              onClick={() => goToStep(stepIndex - 1)}
+              ml="auto"
+              mr="sm"
+            >
+              Previous
+            </Button>
+          )}
+          {/* Review submits nothing, so it always offers Next — including on an
+              unanswered question, where there's no answer to reveal. */}
+          {!isReview && !revealed && (
             <Button
               color="terracotta"
               radius="xl"
+              loading={submitting}
               onClick={handleSubmitAnswer}
             >
               Submit Answer
             </Button>
           )}
-          {revealed && (
+          {(isReview || revealed) && (
             <Button
               color="terracotta"
               radius="xl"
@@ -664,9 +843,18 @@ function QuestRunnerInner({
 
 function QuestRunner() {
   const { farmId, stepIndex } = useParams<{ farmId: string; stepIndex: string; }>();
-  const { user, farms, loading: userLoading } = useUser();
+  const [searchParams] = useSearchParams();
+  const { farms, loading: userLoading, refreshFarms } = useUser();
   const { monoliths, loading: monolithsLoading } = useMonoliths();
-  const { progress, markAnswered } = useQuestProgress(user?.supabaseId);
+
+  // Anything other than an explicit ?mode=review plays the quest, so a
+  // hand-typed or stale mode value can't leave someone in a half-review state.
+  const mode: Mode = searchParams.get('mode') === 'review' ? 'review' : 'play';
+
+  // The Quests page links straight at a quest's soil profile; anything else in
+  // ?phase falls back to the normal walk through the quest.
+  const requestedPhase = searchParams.get('phase');
+  const initialPhase: Phase | undefined = requestedPhase === 'explore' ? 'explore' : undefined;
 
   if (userLoading || monolithsLoading) {
     return (
@@ -701,9 +889,12 @@ function QuestRunner() {
     : 0;
 
   if (String(clampedStep) !== stepIndex) {
+    // Carries ?mode / ?phase through, so a clamped step doesn't silently drop
+    // someone out of review or off the section they asked for.
+    const query = searchParams.toString();
     return (
       <Navigate
-        to={`/quests/${farm.id}/${clampedStep}`}
+        to={`/quests/${farm.id}/${clampedStep}${query ? `?${query}` : ''}`}
         replace
       />
     );
@@ -718,16 +909,14 @@ function QuestRunner() {
       pb={80}
     >
       <QuestRunnerInner
-        key={`${farm.id}-${clampedStep}`}
-        farmId={farm.id}
-        farmName={farm.name}
-        farmerName={farm.farmerName}
-        farmOrderIndex={farm.orderIndex}
+        key={`${farm.id}-${clampedStep}-${mode}-${initialPhase ?? ''}`}
+        farm={farm}
         monolith={monolith}
         stepIndex={clampedStep}
-        nextFarmId={nextFarm?.id}
-        progress={progress}
-        markAnswered={markAnswered}
+        mode={mode}
+        initialPhase={initialPhase}
+        nextFarm={nextFarm}
+        refreshFarms={refreshFarms}
       />
     </Box>
   );
