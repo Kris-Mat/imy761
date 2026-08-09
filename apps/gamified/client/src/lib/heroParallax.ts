@@ -17,7 +17,13 @@ export const HILL_VERTICAL_OFFSET = 40;
 // starting only once the road itself starts (past the hero text column).
 // Keep in sync if that curve changes.
 export const ROAD_PIN_POSITIONS = [
-  { top: '36%', left: '56%' },
-  { top: '51%', left: '74%' },
-  { top: '55%', left: '92%' }
+  {
+    top: '36%', left: '56%'
+  },
+  {
+    top: '51%', left: '74%'
+  },
+  {
+    top: '55%', left: '92%'
+  }
 ];
