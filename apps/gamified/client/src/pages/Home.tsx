@@ -12,7 +12,7 @@ import { gsap } from '../lib/gsap';
 import { useUser } from '../context/UserContext';
 
 function Home() {
-  const { user, stats, farms } = useUser();
+  const { user, farms } = useUser();
   // Persisted per-user by UserContext on first login; genConfig() just fills
   // in a temporary random one for the brief window before that resolves.
   const avatarConfig = useMemo(
@@ -20,24 +20,20 @@ function Home() {
     [user?.avatarConfig]
   );
 
+  // Hardcoded for now — the stats API doesn't expose per-category accuracy
+  // yet (would need aggregating UserAttempt by Question.category server-side).
   const displayStats = [
     {
-      label: 'Points Earned', value: (stats?.totalXp ?? 0).toLocaleString()
+      label: 'Horizon Identification', value: '70%'
     },
     {
-      label: 'Rank', value: stats?.rank ?? 'Unranked'
+      label: 'Colour Classification', value: '82%'
     },
     {
-      label: 'Tasks Completed', value: String(stats?.tasksCompleted ?? 0)
+      label: 'Soil Profile Analysis', value: '79%'
     },
     {
-      label: 'Correct Answers', value: String(stats?.correctAnswers ?? 0)
-    },
-    {
-      label: 'Current Streak', value: `${stats?.currentStreak ?? 0} day${stats?.currentStreak === 1 ? '' : 's'}`
-    },
-    {
-      label: 'Badges Earned', value: String(stats?.badgesEarned ?? 0)
+      label: 'Land Suitability', value: '86%'
     }
   ];
   const heroSectionRef = useRef<HTMLDivElement>(null);
@@ -122,9 +118,8 @@ function Home() {
           >
             <NiceAvatar
               {...avatarConfig}
-              bgColor='terracotta.7'
               style={{
-                width: 250, height: 250, flexShrink: 0, borderRadius: '50%', border: '3px solid var(--mantine-color-mustard-5)'
+                width: 250, height: 250, flexShrink: 0, borderRadius: '50%', border: '5px solid var(--mantine-color-moss-9)'
               }}
             />
             <Stack gap="xs">
@@ -156,9 +151,12 @@ function Home() {
               </Text>
             </Stack>
           </Flex>
-
-          <FarmRoad farms={farms ?? []} />
         </Flex>
+
+        <FarmRoad
+          farms={farms ?? []}
+          heroSectionRef={heroSectionRef}
+        />
       </Flex>
 
       <Flex
@@ -176,10 +174,10 @@ function Home() {
         <SoilProfileBackground statsSectionRef={statsSectionRef} />
         <SimpleGrid
           pos="relative"
-          maw={1200}
-          w="100%"
+          maw={700}
+          w="50%"
           mx="auto"
-          cols={3}
+          cols={2}
           spacing="lg"
           style={{ zIndex: 1 }}
         >
