@@ -11,6 +11,7 @@ import { hasAttempted, hasFinished } from '../lib/questProgress';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
+import StaticMountainScene from '../components/StaticMountainScene';
 
 // Keyed by orderIndex (levelNumber), matching the convention in FarmRoad.tsx
 // and FarmerProgressGrid.tsx.
@@ -107,6 +108,7 @@ function Quests() {
       maw={900}
       mx="auto"
     >
+      <StaticMountainScene />
       <Title
         order={1}
         mb="lg"
