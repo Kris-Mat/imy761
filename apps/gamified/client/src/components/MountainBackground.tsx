@@ -1,14 +1,26 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from '../lib/gsap';
+import { HILL_PARALLAX_DISTANCE, HILL_VERTICAL_OFFSET } from '../lib/heroParallax';
+import {
+  FAR_MOUNTAINS_PATH, FRONT_CHARCOAL_PATH, HILL_CURVE, MID_MOUNTAINS_PATH
+} from '../lib/hillShapes';
 
 interface MountainBackgroundProps {
   heroSectionRef: React.RefObject<HTMLDivElement | null>;
 }
 
+// The road only starts once the hero text column has cleared (~49% across)
+// so it never runs behind the welcome message/avatar. From x=950 onward it
+// reuses the exact same points as HILL_CURVE, so the two stay in lockstep;
+// only the lead-in segment (before the text clears) differs.
+const ROAD_CURVE = 'M780,358 C837,382 863,396 950,430 '
+  + 'C1037,464 1192,542 1300,560 C1408,578 1500,547 1600,540';
+const ROAD_OFFSET = 45;
+
 function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
   const farRef = useRef<SVGPathElement>(null);
   const midRef = useRef<SVGPathElement>(null);
-  const nearRef = useRef<SVGPathElement>(null);
+  const hillRoadRef = useRef<SVGGElement>(null);
   const frontRef = useRef<SVGPathElement>(null);
 
   useEffect(() => {
@@ -16,16 +28,16 @@ function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
 
     const layers = [
       {
-        el: farRef.current, distance: 30 
+        el: farRef.current, distance: 25
       },
       {
-        el: midRef.current, distance: 60 
+        el: midRef.current, distance: 55
       },
       {
-        el: nearRef.current, distance: 110 
+        el: hillRoadRef.current, distance: HILL_PARALLAX_DISTANCE
       },
       {
-        el: frontRef.current, distance: 170 
+        el: frontRef.current, distance: 170
       }
     ];
 
@@ -60,26 +72,44 @@ function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
       <rect
         width={1600}
         height={900}
-        fill="var(--mantine-color-terracotta-0)"
+        fill="var(--mantine-color-sky-0)"
       />
       <path
         ref={farRef}
-        d="M0,520 L260,260 L420,420 L620,180 L820,460 L980,300 L1140,480 L1300,340 L1460,470 L1600,380 L1600,900 L0,900 Z"
+        d={FAR_MOUNTAINS_PATH}
         fill="var(--mantine-color-moss-1)"
       />
       <path
         ref={midRef}
-        d="M0,600 L220,420 L400,540 L640,320 L900,560 L1140,400 L1350,540 L1600,460 L1600,900 L0,900 Z"
+        d={MID_MOUNTAINS_PATH}
         fill="var(--mantine-color-moss-2)"
       />
-      <path
-        ref={nearRef}
-        d="M0,680 C260,600 420,660 600,600 C820,520 980,640 1200,580 C1380,540 1500,600 1600,580 L1600,900 L0,900 Z"
-        fill="var(--mantine-color-moss-4)"
-      />
+      {/* Outer group is a static vertical nudge; inner group is what scroll-parallax animates. */}
+      <g transform={`translate(0, ${HILL_VERTICAL_OFFSET})`}>
+        <g ref={hillRoadRef}>
+          <path
+            d={`${HILL_CURVE} L1600,900 L0,900 Z`}
+            fill="var(--mantine-color-moss-4)"
+          />
+          <path
+            d={ROAD_CURVE}
+            transform={`translate(0, ${ROAD_OFFSET})`}
+            fill="none"
+            stroke="var(--mantine-color-terracotta-9)"
+            strokeWidth={16}
+            strokeLinecap="round"
+          />
+          <circle
+            cx={780}
+            cy={358 + ROAD_OFFSET}
+            r={12}
+            fill="var(--mantine-color-terracotta-9)"
+          />
+        </g>
+      </g>
       <path
         ref={frontRef}
-        d="M0,780 C300,700 520,760 760,720 C980,680 1180,740 1400,700 C1500,680 1560,700 1600,690 L1600,900 L0,900 Z"
+        d={FRONT_CHARCOAL_PATH}
         fill="var(--mantine-color-charcoal-5)"
       />
     </svg>

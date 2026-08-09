@@ -11,6 +11,7 @@ import { userApi } from '@shared/api/services/users.api';
 import { useUser } from '../context/UserContext';
 import FarmerProgressGrid from '../components/FarmerProgressGrid';
 import AvatarEditor from '../components/AvatarEditor';
+import StaticMountainScene from '../components/StaticMountainScene';
 
 type ProfileTab = 'progress' | 'details' | 'avatar';
 
@@ -142,304 +143,313 @@ function ProfileContent() {
 
   return (
     <Box
-      px="xl"
-      pt={140}
-      pb={80}
-      maw={1100}
-      mx="auto"
+      pos="relative"
+      mih="100vh"
+      style={{ overflow: 'hidden' }}
     >
-      <Paper
-        radius="lg"
-        shadow="sm"
-        style={{
-          overflow: 'hidden', border: '1px solid var(--mantine-color-charcoal-2)' 
-        }}
+      <StaticMountainScene />
+      <Box
+        pos="relative"
+        px="xl"
+        pt={140}
+        pb={80}
+        maw={1100}
+        mx="auto"
+        style={{ zIndex: 1 }}
       >
-        <Flex align="stretch">
-          <Stack
-            w={260}
-            p="xl"
-            gap="xl"
-            style={{
-              flexShrink: 0, borderRight: '1px solid var(--mantine-color-charcoal-2)'
-            }}
-          >
+        <Paper
+          radius="lg"
+          shadow="sm"
+          style={{
+            overflow: 'hidden', border: '1px solid var(--mantine-color-charcoal-2)'
+          }}
+        >
+          <Flex align="stretch">
             <Stack
-              align="center"
-              gap="xs"
+              w={260}
+              p="xl"
+              gap="xl"
+              style={{
+                flexShrink: 0, borderRight: '1px solid var(--mantine-color-charcoal-2)'
+              }}
             >
-              <NiceAvatar
-                {...draftAvatarConfig}
-                style={{
-                  width: 120, height: 120, borderRadius: '50%', border: '3px solid var(--mantine-color-mustard-5)'
-                }}
-              />
               <Stack
-                gap={0}
                 align="center"
+                gap="xs"
               >
-                <Text
-                  fz="lg"
-                  fw={700}
-                  c="charcoal.9"
-                  ta="center"
+                <NiceAvatar
+                  {...draftAvatarConfig}
+                  style={{
+                    width: 120, height: 120, borderRadius: '50%', border: '3px solid var(--mantine-color-mustard-5)'
+                  }}
+                />
+                <Stack
+                  gap={0}
+                  align="center"
                 >
-                  {user?.firstName}
-                  {' '}
-                  {user?.lastName}
-                </Text>
-                <Text
-                  fz="sm"
-                  c="charcoal.6"
+                  <Text
+                    fz="lg"
+                    fw={700}
+                    c="charcoal.9"
+                    ta="center"
+                  >
+                    {user?.firstName}
+                    {' '}
+                    {user?.lastName}
+                  </Text>
+                  <Text
+                    fz="sm"
+                    c="charcoal.6"
+                  >
+                    {user?.username}
+                  </Text>
+                  <Text
+                    fz="sm"
+                    c="charcoal.5"
+                  >
+                    {user?.email}
+                  </Text>
+                </Stack>
+              </Stack>
+
+              <Stack gap={4}>
+                <NavTabButton
+                  label="Overall Progress"
+                  active={activeTab === 'progress'}
+                  onClick={() => selectTab('progress')}
+                />
+                <NavTabButton
+                  label="User details"
+                  active={activeTab === 'details'}
+                  onClick={() => selectTab('details')}
+                />
+                <NavTabButton
+                  label="Avatar Design"
+                  active={activeTab === 'avatar'}
+                  onClick={() => selectTab('avatar')}
+                />
+              </Stack>
+
+              <Stack mt="auto">
+                <Divider />
+                <Button
+                  variant="subtle"
+                  color="red"
+                  loading={loggingOut}
+                  onClick={handleLogout}
                 >
-                  {user?.username}
-                </Text>
-                <Text
-                  fz="sm"
-                  c="charcoal.5"
-                >
-                  {user?.email}
-                </Text>
+                  Log out
+                </Button>
               </Stack>
             </Stack>
 
-            <Stack gap={4}>
-              <NavTabButton
-                label="Overall Progress"
-                active={activeTab === 'progress'}
-                onClick={() => selectTab('progress')}
-              />
-              <NavTabButton
-                label="User details"
-                active={activeTab === 'details'}
-                onClick={() => selectTab('details')}
-              />
-              <NavTabButton
-                label="Avatar Design"
-                active={activeTab === 'avatar'}
-                onClick={() => selectTab('avatar')}
-              />
-            </Stack>
+            <Box
+              p="xl"
+              style={{
+                flex: 1, minWidth: 0
+              }}
+            >
+              {activeTab === 'progress' && (
+                <Stack gap="xl">
+                  <Stack gap="md">
+                    <Text
+                      fz="xl"
+                      fw={700}
+                      c="charcoal.9"
+                    >
+                      My Progress
+                    </Text>
+                    <FarmerProgressGrid farms={farms ?? []} />
+                  </Stack>
 
-            <Stack mt="auto">
-              <Divider />
-              <Button
-                variant="subtle"
-                color="red"
-                loading={loggingOut}
-                onClick={handleLogout}
-              >
-                Log out
-              </Button>
-            </Stack>
-          </Stack>
+                  <Divider />
 
-          <Box
-            p="xl"
-            style={{
-              flex: 1, minWidth: 0 
-            }}
-          >
-            {activeTab === 'progress' && (
-              <Stack gap="xl">
+                  <Stack gap="xs">
+                    <Text
+                      fz="xl"
+                      fw={700}
+                      c="charcoal.9"
+                    >
+                      My Academic Goals
+                    </Text>
+                    <Text
+                      component="ul"
+                      c="charcoal.7"
+                      style={{
+                        margin: 0, paddingLeft: 20
+                      }}
+                    >
+                      <li>Study 6 days a week</li>
+                      <li>&gt; 70% in semester test</li>
+                      <li>&gt; 65% for module</li>
+                    </Text>
+                    <Stack
+                      gap={4}
+                      mt="sm"
+                    >
+                      <Text
+                        fz="sm"
+                        fw={600}
+                        c="charcoal.7"
+                      >
+                        Comments from mentor:
+                      </Text>
+                      <Text
+                        fz="sm"
+                        fs="italic"
+                        c="charcoal.6"
+                      >
+                        &ldquo;Keep up the consistent effort — your progress is showing in your marks.&rdquo;
+                      </Text>
+                    </Stack>
+                  </Stack>
+                </Stack>
+              )}
+
+              {activeTab === 'details' && (
+                <Stack
+                  gap="md"
+                  maw={420}
+                >
+                  <Text
+                    fz="xl"
+                    fw={700}
+                    c="charcoal.9"
+                  >
+                    User details
+                  </Text>
+                  <TextInput
+                    label="Username"
+                    value={draftDetails.username}
+                    onChange={(event) => setDraftDetails((prev) => ({
+                      ...prev, username: event.currentTarget.value
+                    }))}
+                  />
+                  <Group grow>
+                    <TextInput
+                      label="First name"
+                      value={draftDetails.firstName}
+                      onChange={(event) => setDraftDetails((prev) => ({
+                        ...prev, firstName: event.currentTarget.value
+                      }))}
+                    />
+                    <TextInput
+                      label="Last name"
+                      value={draftDetails.lastName}
+                      onChange={(event) => setDraftDetails((prev) => ({
+                        ...prev, lastName: event.currentTarget.value
+                      }))}
+                    />
+                  </Group>
+                  <Stack gap={2}>
+                    <Text
+                      fz="sm"
+                      fw={500}
+                      c="charcoal.6"
+                    >
+                      Email
+                    </Text>
+                    <Text
+                      fz="md"
+                      c="charcoal.8"
+                    >
+                      {user?.email}
+                    </Text>
+                  </Stack>
+
+                  {detailsError && (
+                    <Text
+                      fz="sm"
+                      c="red.7"
+                    >
+                      {detailsError}
+                    </Text>
+                  )}
+
+                  <Group
+                    justify="flex-end"
+                    mt="md"
+                    pt="md"
+                    style={{ borderTop: '1px solid var(--mantine-color-charcoal-2)' }}
+                  >
+                    <Button
+                      variant="default"
+                      disabled={!detailsDirty || savingDetails}
+                      onClick={() => {
+                        setDraftDetails(persistedDetails);
+                        setDetailsError(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      color="terracotta"
+                      disabled={!detailsDirty}
+                      loading={savingDetails}
+                      onClick={handleSaveDetails}
+                    >
+                      Save changes
+                    </Button>
+                  </Group>
+                </Stack>
+              )}
+
+              {activeTab === 'avatar' && (
                 <Stack gap="md">
                   <Text
                     fz="xl"
                     fw={700}
                     c="charcoal.9"
                   >
-                    My Progress
+                    Avatar Design
                   </Text>
-                  <FarmerProgressGrid farms={farms ?? []} />
-                </Stack>
-
-                <Divider />
-
-                <Stack gap="xs">
-                  <Text
-                    fz="xl"
-                    fw={700}
-                    c="charcoal.9"
-                  >
-                    My Academic Goals
-                  </Text>
-                  <Text
-                    component="ul"
-                    c="charcoal.7"
-                    style={{
-                      margin: 0, paddingLeft: 20 
-                    }}
-                  >
-                    <li>Study 6 days a week</li>
-                    <li>&gt; 70% in semester test</li>
-                    <li>&gt; 65% for module</li>
-                  </Text>
-                  <Stack
-                    gap={4}
-                    mt="sm"
-                  >
-                    <Text
-                      fz="sm"
-                      fw={600}
-                      c="charcoal.7"
-                    >
-                      Comments from mentor:
-                    </Text>
-                    <Text
-                      fz="sm"
-                      fs="italic"
-                      c="charcoal.6"
-                    >
-                      &ldquo;Keep up the consistent effort — your progress is showing in your marks.&rdquo;
-                    </Text>
-                  </Stack>
-                </Stack>
-              </Stack>
-            )}
-
-            {activeTab === 'details' && (
-              <Stack
-                gap="md"
-                maw={420}
-              >
-                <Text
-                  fz="xl"
-                  fw={700}
-                  c="charcoal.9"
-                >
-                  User details
-                </Text>
-                <TextInput
-                  label="Username"
-                  value={draftDetails.username}
-                  onChange={(event) => setDraftDetails((prev) => ({
-                    ...prev, username: event.currentTarget.value 
-                  }))}
-                />
-                <Group grow>
-                  <TextInput
-                    label="First name"
-                    value={draftDetails.firstName}
-                    onChange={(event) => setDraftDetails((prev) => ({
-                      ...prev, firstName: event.currentTarget.value 
+                  <AvatarEditor
+                    config={draftAvatarConfig}
+                    onChange={(patch) => setDraftAvatarConfig((prev) => ({
+                      ...prev, ...patch
                     }))}
                   />
-                  <TextInput
-                    label="Last name"
-                    value={draftDetails.lastName}
-                    onChange={(event) => setDraftDetails((prev) => ({
-                      ...prev, lastName: event.currentTarget.value 
-                    }))}
-                  />
-                </Group>
-                <Stack gap={2}>
-                  <Text
-                    fz="sm"
-                    fw={500}
-                    c="charcoal.6"
+
+                  {avatarError && (
+                    <Text
+                      fz="sm"
+                      c="red.7"
+                    >
+                      {avatarError}
+                    </Text>
+                  )}
+
+                  <Group
+                    justify="flex-end"
+                    mt="md"
+                    pt="md"
+                    style={{ borderTop: '1px solid var(--mantine-color-charcoal-2)' }}
                   >
-                    Email
-                  </Text>
-                  <Text
-                    fz="md"
-                    c="charcoal.8"
-                  >
-                    {user?.email}
-                  </Text>
+                    <Button
+                      variant="default"
+                      disabled={!avatarDirty || savingAvatar}
+                      onClick={() => {
+                        setDraftAvatarConfig(persistedAvatarConfig);
+                        setAvatarError(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      color="terracotta"
+                      disabled={!avatarDirty}
+                      loading={savingAvatar}
+                      onClick={handleSaveAvatar}
+                    >
+                      Save changes
+                    </Button>
+                  </Group>
                 </Stack>
-
-                {detailsError && (
-                  <Text
-                    fz="sm"
-                    c="red.7"
-                  >
-                    {detailsError}
-                  </Text>
-                )}
-
-                <Group
-                  justify="flex-end"
-                  mt="md"
-                  pt="md"
-                  style={{ borderTop: '1px solid var(--mantine-color-charcoal-2)' }}
-                >
-                  <Button
-                    variant="default"
-                    disabled={!detailsDirty || savingDetails}
-                    onClick={() => {
-                      setDraftDetails(persistedDetails);
-                      setDetailsError(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    color="terracotta"
-                    disabled={!detailsDirty}
-                    loading={savingDetails}
-                    onClick={handleSaveDetails}
-                  >
-                    Save changes
-                  </Button>
-                </Group>
-              </Stack>
-            )}
-
-            {activeTab === 'avatar' && (
-              <Stack gap="md">
-                <Text
-                  fz="xl"
-                  fw={700}
-                  c="charcoal.9"
-                >
-                  Avatar Design
-                </Text>
-                <AvatarEditor
-                  config={draftAvatarConfig}
-                  onChange={(patch) => setDraftAvatarConfig((prev) => ({
-                    ...prev, ...patch 
-                  }))}
-                />
-
-                {avatarError && (
-                  <Text
-                    fz="sm"
-                    c="red.7"
-                  >
-                    {avatarError}
-                  </Text>
-                )}
-
-                <Group
-                  justify="flex-end"
-                  mt="md"
-                  pt="md"
-                  style={{ borderTop: '1px solid var(--mantine-color-charcoal-2)' }}
-                >
-                  <Button
-                    variant="default"
-                    disabled={!avatarDirty || savingAvatar}
-                    onClick={() => {
-                      setDraftAvatarConfig(persistedAvatarConfig);
-                      setAvatarError(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    color="terracotta"
-                    disabled={!avatarDirty}
-                    loading={savingAvatar}
-                    onClick={handleSaveAvatar}
-                  >
-                    Save changes
-                  </Button>
-                </Group>
-              </Stack>
-            )}
-          </Box>
-        </Flex>
-      </Paper>
+              )}
+            </Box>
+          </Flex>
+        </Paper>
+      </Box>
     </Box>
   );
 }

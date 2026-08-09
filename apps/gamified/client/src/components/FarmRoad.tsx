@@ -1,24 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Avatar, Box, Tooltip } from '@mantine/core';
 import type { FarmProgress } from '@shared/api/models/farm.model';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
+import { gsap } from '../lib/gsap';
+import { HILL_PARALLAX_DISTANCE, ROAD_PIN_POSITIONS } from '../lib/heroParallax';
 
 interface FarmRoadProps {
   farms: FarmProgress[];
+  heroSectionRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const roadPositions = [
+// Stand-in so the road has pins to show while /users/me/farms is 500ing —
+// remove once the backend sync issue is fixed.
+const FALLBACK_FARMS: FarmProgress[] = [
   {
-    top: '12%', left: '6%'
+    id: -1, name: 'Redridge Farm', farmerName: 'Pieter', orderIndex: 1, visited: true, completed: true, scorePercent: 82, questions: []
   },
   {
-    top: '50%', left: '50%'
+    id: -2, name: 'Green Valley Farm', farmerName: 'Nomsa', orderIndex: 2, visited: false, completed: false, scorePercent: null, questions: []
   },
   {
-    top: '91%', left: '93%'
+    id: -3, name: 'Sunrise Farm', farmerName: 'Willem', orderIndex: 3, visited: false, completed: false, scorePercent: null, questions: []
   }
 ];
 
@@ -39,49 +44,47 @@ function tooltipLabel(farm: FarmProgress) {
   return `${farm.name} — Not visited yet`;
 }
 
-function FarmRoad({ farms }: FarmRoadProps) {
+function FarmRoad({ farms, heroSectionRef }: FarmRoadProps) {
   const navigate = useNavigate();
   const [hoveredId, setHoveredId] = useState<number | null>(null);
-  const nextFarmId = farms.find((farm) => !farm.visited)?.id;
+  const overlayRef = useRef<HTMLDivElement>(null);
 
-  const pins = farms.slice(0, roadPositions.length).map((farm, i) => ({
-    ...farm, ...roadPositions[i]
+  const effectiveFarms = farms.length > 0 ? farms : FALLBACK_FARMS;
+  const pins = effectiveFarms.slice(0, ROAD_PIN_POSITIONS.length).map((farm, i) => ({
+    ...farm, ...ROAD_PIN_POSITIONS[i]
   }));
+
+  useEffect(() => {
+    if (!heroSectionRef.current || !overlayRef.current) return undefined;
+
+    // Same distance as the hill+road layer in MountainBackground so the
+    // pins stay visually locked onto the road during the scroll parallax.
+    const ctx = gsap.context(() => {
+      gsap.to(overlayRef.current, {
+        y: HILL_PARALLAX_DISTANCE,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: heroSectionRef.current,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true
+        }
+      });
+    });
+
+    return () => ctx.revert();
+  }, [heroSectionRef]);
 
   return (
     <Box
-      pos="relative"
-      w="100%"
-      maw={580}
-      h={420}
-      mx="auto"
+      ref={overlayRef}
+      pos="absolute"
+      inset={0}
+      style={{ zIndex: 1 }}
     >
-      <svg
-        viewBox="0 0 460 340"
-        width="100%"
-        height="100%"
-        aria-hidden="true"
-      >
-        <path
-          d="M30,30 C90,60 120,130 230,170 C300,200 360,250 430,300"
-          fill="none"
-          stroke="var(--mantine-color-charcoal-4)"
-          strokeWidth={12}
-          strokeLinecap="round"
-        />
-        <path
-          d="M30,30 C90,60 120,130 230,170 C300,200 360,250 430,300"
-          fill="none"
-          stroke="var(--mantine-color-mustard-1)"
-          strokeWidth={4}
-          strokeDasharray="16 14"
-          strokeLinecap="round"
-        />
-      </svg>
       {pins.map((farm) => {
         const isHovered = hoveredId === farm.id;
         const isDimmed = hoveredId !== null && !isHovered;
-        const isNextStep = farm.id === nextFarmId;
 
         return (
           <Box
@@ -91,22 +94,6 @@ function FarmRoad({ farms }: FarmRoadProps) {
             left={farm.left}
             style={{ transform: 'translate(-50%, -50%)' }}
           >
-            {isNextStep && (
-              <Box
-                pos="absolute"
-                top="50%"
-                left="50%"
-                style={{
-                  width: avatarSize + 6,
-                  height: avatarSize + 6,
-                  borderRadius: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  background: 'radial-gradient(circle, var(--mantine-color-mustard-5) 0%, var(--mantine-color-mustard-4) 55%, transparent 75%)',
-                  animation: 'farm-next-glow 3.6s ease-in-out infinite',
-                  pointerEvents: 'none'
-                }}
-              />
-            )}
             <Tooltip
               label={tooltipLabel(farm)}
               withArrow
@@ -124,7 +111,7 @@ function FarmRoad({ farms }: FarmRoadProps) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: farm.visited ? 'var(--mantine-color-moss-6)' : 'var(--mantine-color-terracotta-1)',
-                  border: `3px solid ${farm.visited ? 'var(--mantine-color-moss-8)' : 'var(--mantine-color-terracotta-5)'}`,
+                  border: `3px solid ${farm.visited ? 'var(--mantine-color-moss-8)' : 'var(--mantine-color-terracotta-7)'}`,
                   cursor: 'pointer',
                   transform: `scale(${isHovered ? 1.2 : 1})`,
                   opacity: isDimmed ? 0.55 : 1,

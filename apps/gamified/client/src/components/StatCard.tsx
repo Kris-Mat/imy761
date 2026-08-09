@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { Paper, Stack, Text } from '@mantine/core';
 import { useHover } from '@mantine/hooks';
+import { gsap } from '../lib/gsap';
 
 interface StatCardProps {
   label: string;
@@ -7,20 +9,36 @@ interface StatCardProps {
 }
 
 function StatCard({ label, value }: StatCardProps) {
-  const { hovered, ref } = useHover<HTMLDivElement>();
+  const { hovered, ref: hoverRef } = useHover<HTMLDivElement>();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Home's scroll animation also sets this element's transform (via GSAP)
+  // to translate it into place. Doing the hover scale through React's style
+  // prop instead of GSAP would overwrite that transform on the first hover
+  // — so the scale is driven through GSAP too, which composes both instead
+  // of one clobbering the other.
+  useEffect(() => {
+    if (!cardRef.current) return;
+    gsap.to(cardRef.current, {
+      scale: hovered ? 1.05 : 1,
+      duration: 0.2,
+      ease: 'power1.out'
+    });
+  }, [hovered]);
 
   return (
     <Paper
-      ref={ref}
+      ref={(node: HTMLDivElement | null) => {
+        cardRef.current = node;
+        hoverRef(node);
+      }}
       className="stat-card"
       radius="lg"
-      p="md"
+      p="sm"
       style={{
-        aspectRatio: '1 / 1',
+        aspectRatio: '2 / 1',
         border: '1.5px solid white',
-        backgroundColor: hovered ? 'var(--mantine-color-charcoal-6)' : 'transparent',
-        boxShadow: hovered ? '0 0 30px rgba(255, 255, 255, 0.4)' : 'none',
-        transition: 'background-color 200ms ease, box-shadow 200ms ease'
+        backgroundColor: 'var(--mantine-color-charcoal-6)'
       }}
     >
       <Stack

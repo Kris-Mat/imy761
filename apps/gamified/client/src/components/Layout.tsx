@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Anchor, Box, Group } from '@mantine/core';
 import { NavLink as RouterNavLink, Outlet } from 'react-router';
-import { useHover } from '@mantine/hooks';
 import NiceAvatar, { genConfig } from 'react-nice-avatar';
 import type { AvatarFullConfig } from 'react-nice-avatar';
 import { Icon } from '@shared/ui/Icon';
 import { ScrollSmoother } from '../lib/gsap';
 import { UserProvider, useUser } from '../context/UserContext';
 
-function NavItem({ to, label, opacity }: { to: string; label: string; opacity: number; }) {
+function NavItem({ to, label }: { to: string; label: string; }) {
   return (
     <Anchor
       component={RouterNavLink}
@@ -17,17 +16,14 @@ function NavItem({ to, label, opacity }: { to: string; label: string; opacity: n
       fz="lg"
       fw={600}
       c="charcoal.8"
-      style={({ isActive }: { isActive: boolean; }) => ({
-        opacity: isActive ? 1 : opacity,
-        transition: 'opacity 200ms ease'
-      })}
+      style={({ isActive }: { isActive: boolean; }) => ({ opacity: isActive ? 1 : 0.6 })}
     >
       {label}
     </Anchor>
   );
 }
 
-function ProfileNavAvatar({ opacity }: { opacity: number; }) {
+function ProfileNavAvatar() {
   const { user } = useUser();
   const avatarConfig = useMemo(
     () => genConfig((user?.avatarConfig ?? undefined) as AvatarFullConfig | undefined),
@@ -40,15 +36,14 @@ function ProfileNavAvatar({ opacity }: { opacity: number; }) {
       to="/profile"
       underline="never"
       style={({ isActive }: { isActive: boolean; }) => ({
-        opacity: isActive ? 1 : opacity,
-        transition: 'opacity 200ms ease',
+        opacity: isActive ? 1 : 0.6,
         display: 'flex'
       })}
     >
       <NiceAvatar
         {...avatarConfig}
         style={{
-          width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--mantine-color-mustard-5)'
+          width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--mantine-color-moss-9)'
         }}
       />
     </Anchor>
@@ -56,7 +51,6 @@ function ProfileNavAvatar({ opacity }: { opacity: number; }) {
 }
 
 function Layout() {
-  const { hovered, ref } = useHover<HTMLDivElement>();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -73,20 +67,19 @@ function Layout() {
   return (
     <UserProvider>
       <Group
-        ref={ref}
         pos="fixed"
         top={20}
         left="50%"
-        gap={32}
+        justify="space-between"
+        w="40%"
         px={28}
         py={10}
         style={{
           transform: 'translateX(-50%)',
           zIndex: 100,
           borderRadius: 999,
-          border: `1px solid ${hovered ? 'var(--mantine-color-charcoal-3)' : 'transparent'}`,
-          backgroundColor: hovered ? 'var(--mantine-color-body)' : 'transparent',
-          transition: 'border-color 200ms ease, background-color 200ms ease'
+          border: '1px solid var(--mantine-color-moss-9)',
+          backgroundColor: 'var(--mantine-color-body)'
         }}
       >
         <Anchor
@@ -99,17 +92,13 @@ function Layout() {
             size={24}
             weight="fill"
             color="var(--mantine-color-terracotta-7)"
-            style={{
-              opacity: hovered ? 1 : 0.5, transition: 'opacity 200ms ease'
-            }}
           />
         </Anchor>
         <NavItem
           to="/quests"
           label="Quests"
-          opacity={hovered ? 0.75 : 0.15}
         />
-        <ProfileNavAvatar opacity={hovered ? 0.75 : 0.15} />
+        <ProfileNavAvatar />
       </Group>
 
       <div
