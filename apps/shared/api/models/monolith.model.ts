@@ -5,7 +5,8 @@ export interface AnswerOption {
   orderIndex: number;
 }
 
-export type QuestionCategory = 'DIAGNOSTIC_HORIZONS' | 'SOIL_FORM' | 'LANDSCAPE_POSITION' | 'SUITABILITY';
+export type QuestionCategory =
+  'DIAGNOSTIC_HORIZONS' | 'SOIL_FORM' | 'SOIL_FAMILY_CODE' | 'LANDSCAPE_POSITION' | 'SUITABILITY';
 
 export interface Question {
   id: number;

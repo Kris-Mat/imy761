@@ -152,7 +152,7 @@ const models: TsoaRoute.Models = {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "QuestionCategory": {
         "dataType": "refAlias",
-        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
+        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["SOIL_FAMILY_CODE"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "AnswerOption": {

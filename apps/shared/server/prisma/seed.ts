@@ -20,7 +20,10 @@ const users = [
   }
 ];
 
-// Content transcribed exactly from "Plain App questions + answers.pdf". Munsell
+// Content transcribed from "Plain App questions + answers.pdf" and
+// "Non-Gamified_App_Questions_Answers_Spec.pdf" (the latter added the
+// SOIL_FAMILY_CODE question — previously only a typed fill-in table — as a
+// proper multiple-choice question, per its Implementation Notes). Munsell
 // hue/value/chroma below are approximated onto the single supplied 7.5YR chart
 // page (it has no grey/gley page, so the two Rensburg greys are the least
 // faithful match available) — this is a display-colour estimate, not part of
@@ -53,6 +56,15 @@ interface LevelSeed {
   description: string;
   farmerName: string;
   scenario: string;
+}
+
+// The three Soil Family Codes always appear together as the MCQ options for
+// every chapter's SOIL_FAMILY_CODE question — only which one is correct changes.
+const SOIL_FAMILY_CODES = ['1210', '2130', '0220'];
+function soilFamilyCodeOptions(correctCode: string): { text: string; isCorrect: boolean; }[] {
+  return SOIL_FAMILY_CODES.map((code) => ({
+    text: code, isCorrect: code === correctCode
+  }));
 }
 
 interface MonolithSeed {
@@ -102,64 +114,70 @@ const monoliths: MonolithSeed[] = [
       {
         category: QuestionCategory.DIAGNOSTIC_HORIZONS,
         orderIndex: 1,
-        prompt: 'Which diagnostic horizons are present?',
+        prompt: 'Which diagnostic horizons are present in this soil profile?',
         options: [
           {
-            text: 'Orthic A + Red Apedal B', isCorrect: true 
+            text: 'Orthic A + Red Apedal B', isCorrect: true
           },
           {
-            text: 'Orthic A + Yellow-brown Apedal', isCorrect: false 
+            text: 'Orthic A + Yellow-brown Apedal', isCorrect: false
           },
           {
-            text: 'Orthic A + Soft Plinthic', isCorrect: false 
+            text: 'Orthic A + Soft Plinthic', isCorrect: false
           }
         ]
       },
       {
         category: QuestionCategory.SOIL_FORM,
         orderIndex: 2,
-        prompt: 'Identify the soil form.',
+        prompt: 'Which soil form is represented by this profile?',
         options: [
           {
-            text: 'Avalon', isCorrect: false 
+            text: 'Avalon', isCorrect: false
           },
           {
-            text: 'Rensburg', isCorrect: false 
+            text: 'Rensburg', isCorrect: false
           },
           {
-            text: 'Hutton', isCorrect: true 
+            text: 'Hutton', isCorrect: true
           }
         ]
       },
       {
-        category: QuestionCategory.LANDSCAPE_POSITION,
+        category: QuestionCategory.SOIL_FAMILY_CODE,
         orderIndex: 3,
+        prompt: 'What is the correct Soil Family Code for this Hutton soil?',
+        options: soilFamilyCodeOptions('1210')
+      },
+      {
+        category: QuestionCategory.LANDSCAPE_POSITION,
+        orderIndex: 4,
         prompt: 'Where would this soil most likely occur in the landscape?',
         options: [
           {
-            text: 'Upper slope', isCorrect: true 
+            text: 'Upper slope', isCorrect: true
           },
           {
-            text: 'Mid slope', isCorrect: false 
+            text: 'Mid slope', isCorrect: false
           },
           {
-            text: 'Foot slope', isCorrect: false 
+            text: 'Foot slope', isCorrect: false
           }
         ]
       },
       {
         category: QuestionCategory.SUITABILITY,
-        orderIndex: 4,
-        prompt: 'Is this soil suitable for maize production?',
+        orderIndex: 5,
+        prompt: 'How suitable is this soil for maize production?',
         options: [
           {
-            text: 'Highly suitable', isCorrect: true 
+            text: 'Highly suitable', isCorrect: true
           },
           {
-            text: 'Moderately suitable', isCorrect: false 
+            text: 'Moderately suitable', isCorrect: false
           },
           {
-            text: 'Unsuitable', isCorrect: false 
+            text: 'Unsuitable', isCorrect: false
           }
         ]
       }
@@ -229,64 +247,70 @@ const monoliths: MonolithSeed[] = [
       {
         category: QuestionCategory.DIAGNOSTIC_HORIZONS,
         orderIndex: 1,
-        prompt: 'Which diagnostic horizons are present?',
+        prompt: 'Which diagnostic horizons are present in this soil profile?',
         options: [
           {
-            text: 'Orthic A + Red Apedal B', isCorrect: false 
+            text: 'Orthic A + Red Apedal B', isCorrect: false
           },
           {
-            text: 'Orthic A + Yellow-brown Apedal + Soft Plinthic', isCorrect: true 
+            text: 'Orthic A + Yellow-brown Apedal + Soft Plinthic', isCorrect: true
           },
           {
-            text: 'Vertic A + G Horizon', isCorrect: false 
+            text: 'Vertic A + G Horizon', isCorrect: false
           }
         ]
       },
       {
         category: QuestionCategory.SOIL_FORM,
         orderIndex: 2,
-        prompt: 'Identify the soil form.',
+        prompt: 'Which soil form is represented by this profile?',
         options: [
           {
-            text: 'Hutton', isCorrect: false 
+            text: 'Hutton', isCorrect: false
           },
           {
-            text: 'Avalon', isCorrect: true 
+            text: 'Avalon', isCorrect: true
           },
           {
-            text: 'Rensburg', isCorrect: false 
+            text: 'Rensburg', isCorrect: false
           }
         ]
       },
       {
-        category: QuestionCategory.LANDSCAPE_POSITION,
+        category: QuestionCategory.SOIL_FAMILY_CODE,
         orderIndex: 3,
+        prompt: 'What is the correct Soil Family Code for this Avalon soil?',
+        options: soilFamilyCodeOptions('2130')
+      },
+      {
+        category: QuestionCategory.LANDSCAPE_POSITION,
+        orderIndex: 4,
         prompt: 'Where would this soil most likely occur in the landscape?',
         options: [
           {
-            text: 'Upper slope', isCorrect: false 
+            text: 'Upper slope', isCorrect: false
           },
           {
-            text: 'Mid slope', isCorrect: false 
+            text: 'Mid slope', isCorrect: false
           },
           {
-            text: 'Foot slope', isCorrect: true 
+            text: 'Foot slope', isCorrect: true
           }
         ]
       },
       {
         category: QuestionCategory.SUITABILITY,
-        orderIndex: 4,
-        prompt: 'Is this soil suitable for soybean production?',
+        orderIndex: 5,
+        prompt: 'How suitable is this soil for soybean production?',
         options: [
           {
-            text: 'Highly suitable', isCorrect: false 
+            text: 'Highly suitable', isCorrect: false
           },
           {
-            text: 'Suitable, but monitor seasonal water conditions', isCorrect: true 
+            text: 'Suitable, but monitor seasonal water conditions', isCorrect: true
           },
           {
-            text: 'Unsuitable', isCorrect: false 
+            text: 'Unsuitable', isCorrect: false
           }
         ]
       }
@@ -347,64 +371,70 @@ const monoliths: MonolithSeed[] = [
       {
         category: QuestionCategory.DIAGNOSTIC_HORIZONS,
         orderIndex: 1,
-        prompt: 'Which diagnostic horizons are present?',
+        prompt: 'Which diagnostic horizons are present in this soil profile?',
         options: [
           {
-            text: 'Orthic A + Red Apedal B', isCorrect: false 
+            text: 'Orthic A + Red Apedal B', isCorrect: false
           },
           {
-            text: 'Orthic A + Yellow-brown Apedal', isCorrect: false 
+            text: 'Orthic A + Yellow-brown Apedal', isCorrect: false
           },
           {
-            text: 'Vertic A + G Horizon', isCorrect: true 
+            text: 'Vertic A + G Horizon', isCorrect: true
           }
         ]
       },
       {
         category: QuestionCategory.SOIL_FORM,
         orderIndex: 2,
-        prompt: 'Identify the soil form.',
+        prompt: 'Which soil form is represented by this profile?',
         options: [
           {
-            text: 'Hutton', isCorrect: false 
+            text: 'Hutton', isCorrect: false
           },
           {
-            text: 'Avalon', isCorrect: false 
+            text: 'Avalon', isCorrect: false
           },
           {
-            text: 'Rensburg', isCorrect: true 
+            text: 'Rensburg', isCorrect: true
           }
         ]
       },
       {
-        category: QuestionCategory.LANDSCAPE_POSITION,
+        category: QuestionCategory.SOIL_FAMILY_CODE,
         orderIndex: 3,
+        prompt: 'What is the correct Soil Family Code for this Rensburg soil?',
+        options: soilFamilyCodeOptions('0220')
+      },
+      {
+        category: QuestionCategory.LANDSCAPE_POSITION,
+        orderIndex: 4,
         prompt: 'Where would this soil most likely occur in the landscape?',
         options: [
           {
-            text: 'Upper slope', isCorrect: false 
+            text: 'Upper slope', isCorrect: false
           },
           {
-            text: 'Mid slope', isCorrect: false 
+            text: 'Mid slope', isCorrect: false
           },
           {
-            text: 'Foot slope', isCorrect: true 
+            text: 'Foot slope', isCorrect: true
           }
         ]
       },
       {
         category: QuestionCategory.SUITABILITY,
-        orderIndex: 4,
-        prompt: 'Is this soil suitable for pasture production?',
+        orderIndex: 5,
+        prompt: 'How suitable is this soil for pasture production?',
         options: [
           {
-            text: 'Highly suitable', isCorrect: false 
+            text: 'Highly suitable', isCorrect: false
           },
           {
-            text: 'Moderately suitable', isCorrect: false 
+            text: 'Moderately suitable', isCorrect: false
           },
           {
-            text: 'Suitable, but careful management is required because of poor drainage', isCorrect: true 
+            text: 'Suitable, but careful management is required because of poor drainage', isCorrect: true
           }
         ]
       }
