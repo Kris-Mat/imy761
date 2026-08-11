@@ -8,6 +8,7 @@ import { userApi } from '@shared/api/services/users.api';
 import type { User } from '@shared/api/models/user.model';
 import type { UserStats } from '@shared/api/models/user-stats.model';
 import type { FarmProgress } from '@shared/api/models/farm.model';
+import { FALLBACK_FARMS } from '../lib/fallbackQuestData';
 
 interface UserContextValue {
   user: User | null;
@@ -112,6 +113,14 @@ export function UserProvider({ children }: { children: ReactNode; }) {
           })
           .catch((error: unknown) => console.error('Failed to load farms', error))
       ]);
+
+      // Dev-only: if the backend never returned real farms (e.g. it's down
+      // locally), fall back to placeholder data so the UI — including
+      // navigating into a quest — stays testable without a working server.
+      // Never runs in production builds.
+      if (import.meta.env.DEV && !cancelled) {
+        setFarms((prev) => prev ?? FALLBACK_FARMS);
+      }
     };
 
     authApi.getSession().then((session) => {

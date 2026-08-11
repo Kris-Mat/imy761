@@ -16,6 +16,7 @@ import MunsellChip from '../components/MunsellChip';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
+import StaticMountainScene from '../components/StaticMountainScene';
 
 // Keyed by orderIndex (levelNumber), matching the convention in FarmRoad.tsx
 // and FarmerProgressGrid.tsx.
@@ -153,7 +154,7 @@ function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
       >
         <Image
           src={monolith.imageUrl}
-          alt={`${monolith.name} soil profile`}
+          alt="Soil profile"
           radius="md"
           style={{ border: '1px solid var(--mantine-color-charcoal-2)' }}
         />
@@ -195,7 +196,7 @@ function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
         c="charcoal.5"
         ta="center"
       >
-        {monolith.name} profile — hover a layer for its details
+        Soil profile — hover a layer for its details
       </Text>
     </Stack>
   );
@@ -282,7 +283,7 @@ function ExploreStep({ monolith, continueLabel, onContinue }: {
         c="charcoal.8"
         ta="center"
       >
-        Examine {monolith.name}&rsquo;s soil profile. Select each layer to see its details.
+        Examine the given soil profile. Select each layer to see its details.
       </Text>
       <Group
         align="flex-start"
@@ -296,7 +297,7 @@ function ExploreStep({ monolith, continueLabel, onContinue }: {
         >
           <Image
             src={monolith.imageUrl}
-            alt={`${monolith.name} soil monolith`}
+            alt="Soil monolith"
             radius="md"
           />
           {monolith.horizons.map((horizon, index) => {
@@ -697,23 +698,28 @@ function QuestRunnerInner({
   const finished = hasFinished(farm);
 
   return (
-    <Stack
-      maw={900}
-      mx="auto"
-      gap="lg"
-    >
-      <Title
-        order={1}
-        c="charcoal.9"
+    <Stack gap="md">
+      <Paper
+        radius="lg"
+        shadow="sm"
+        p="lg"
+        style={{ border: '1px solid var(--mantine-color-charcoal-2)' }}
       >
-        Quest {farmOrderIndex}: {farmerName}
-      </Title>
+        <Title
+          order={1}
+          c="charcoal.9"
+        >
+          Quest {farmOrderIndex}: {farmerName}
+        </Title>
+      </Paper>
 
-      <Card
-        withBorder
-        radius="xl"
+      <Paper
+        radius="lg"
+        shadow="sm"
         p={0}
-        style={{ overflow: 'hidden' }}
+        style={{
+          overflow: 'hidden', border: '1px solid var(--mantine-color-charcoal-2)' 
+        }}
       >
         <Group
           justify="center"
@@ -788,55 +794,59 @@ function QuestRunnerInner({
             />
           )}
         </Box>
-      </Card>
 
-      {!isComplete && phase === 'question' && (
-        <Group justify="space-between">
-          <Button
-            variant="subtle"
-            color="charcoal"
-            radius="xl"
-            onClick={() => navigate('/quests')}
+        {!isComplete && phase === 'question' && (
+          <Group
+            justify="space-between"
+            px="xl"
+            pb="xl"
           >
-            {isReview ? 'Exit Review' : 'Exit Quest'}
-          </Button>
-          {/* Only review needs to step backwards — a play run is a fresh
-              attempt, so there's nothing behind you to go back and look at. */}
-          {isReview && stepIndex > 0 && (
             <Button
-              variant="light"
+              variant="subtle"
               color="charcoal"
               radius="xl"
-              onClick={() => goToStep(stepIndex - 1)}
-              ml="auto"
-              mr="sm"
+              onClick={() => navigate('/quests')}
             >
-              Previous
+              {isReview ? 'Exit Review' : 'Exit Quest'}
             </Button>
-          )}
-          {/* Review submits nothing, so it always offers Next — including on an
-              unanswered question, where there's no answer to reveal. */}
-          {!isReview && !revealed && (
-            <Button
-              color="terracotta"
-              radius="xl"
-              loading={submitting}
-              onClick={handleSubmitAnswer}
-            >
-              Submit Answer
-            </Button>
-          )}
-          {(isReview || revealed) && (
-            <Button
-              color="terracotta"
-              radius="xl"
-              onClick={() => goToStep(stepIndex + 1)}
-            >
-              Next
-            </Button>
-          )}
-        </Group>
-      )}
+            {/* Only review needs to step backwards — a play run is a fresh
+                attempt, so there's nothing behind you to go back and look at. */}
+            {isReview && stepIndex > 0 && (
+              <Button
+                variant="light"
+                color="charcoal"
+                radius="xl"
+                onClick={() => goToStep(stepIndex - 1)}
+                ml="auto"
+                mr="sm"
+              >
+                Previous
+              </Button>
+            )}
+            {/* Review submits nothing, so it always offers Next — including on an
+                unanswered question, where there's no answer to reveal. */}
+            {!isReview && !revealed && (
+              <Button
+                color="terracotta"
+                radius="xl"
+                loading={submitting}
+                onClick={handleSubmitAnswer}
+              >
+                Submit Answer
+              </Button>
+            )}
+            {(isReview || revealed) && (
+              <Button
+                color="terracotta"
+                radius="xl"
+                onClick={() => goToStep(stepIndex + 1)}
+              >
+                Next
+              </Button>
+            )}
+          </Group>
+        )}
+      </Paper>
     </Stack>
   );
 }
@@ -858,13 +868,16 @@ function QuestRunner() {
 
   if (userLoading || monolithsLoading) {
     return (
-      <Stack
-        align="center"
-        justify="center"
-        mih="60vh"
-      >
-        <Loader color="terracotta" />
-      </Stack>
+      <>
+        <StaticMountainScene />
+        <Stack
+          align="center"
+          justify="center"
+          mih="60vh"
+        >
+          <Loader color="terracotta" />
+        </Stack>
+      </>
     );
   }
 
@@ -907,7 +920,10 @@ function QuestRunner() {
       px="xl"
       pt={140}
       pb={80}
+      maw={900}
+      mx="auto"
     >
+      <StaticMountainScene />
       <QuestRunnerInner
         key={`${farm.id}-${clampedStep}-${mode}-${initialPhase ?? ''}`}
         farm={farm}

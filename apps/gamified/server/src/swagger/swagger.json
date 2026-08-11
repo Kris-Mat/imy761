@@ -334,6 +334,7 @@
 				"enum": [
 					"DIAGNOSTIC_HORIZONS",
 					"SOIL_FORM",
+					"SOIL_FAMILY_CODE",
 					"LANDSCAPE_POSITION",
 					"SUITABILITY"
 				]

@@ -1,34 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import {
-  Button, Card, Group, Image, Loader, Radio, Stack, Table, Text, TextInput, Title
+  Button, Group, Image, Loader, Radio, Stack, Text, Title
 } from '@mantine/core';
 import type { Horizon, Monolith, Question } from '@shared/api/models/monolith.model';
 import { useContent } from '../context/ContentContext';
 import MunsellChip from '../components/MunsellChip';
+import SectionCard from '../components/SectionCard';
 
 type Step =
   | { kind: 'monolith'; }
-  | { kind: 'question'; question: Question; }
-  | { kind: 'soilFamily'; };
+  | { kind: 'question'; question: Question; };
 
 function buildSteps(monolith: Monolith): Step[] {
-  const [diagnostic, soilForm, landscape, suitability] = monolith.questions;
   return [
     { kind: 'monolith' },
-    {
-      kind: 'question', question: diagnostic 
-    },
-    {
-      kind: 'question', question: soilForm 
-    },
-    { kind: 'soilFamily' },
-    {
-      kind: 'question', question: landscape 
-    },
-    {
-      kind: 'question', question: suitability 
-    }
+    ...monolith.questions.map((question): Step => ({
+      kind: 'question', question
+    }))
   ];
 }
 
@@ -51,7 +40,7 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
 
   return (
     <Stack align="center" gap="lg">
-      <Text fw={600}>Examine the soil monolith. Select each horizon to view its characteristics.</Text>
+      <Text fw={600}>Examine the soil profile. Select each horizon to view its characteristics.</Text>
       <Group
         align="flex-start"
         gap="xl"
@@ -59,12 +48,12 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
         justify="center"
       >
         <div style={{
-          position: 'relative', width: 220 
+          position: 'relative', width: 220
         }}
         >
           <Image
             src={monolith.imageUrl}
-            alt={`${monolith.name} soil monolith`}
+            alt="Soil profile"
             radius="md"
           />
           {monolith.horizons.map((horizon, index) => (
@@ -89,14 +78,17 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
         </div>
 
         {activeHorizon && (
-          <Card
+          <SectionCard
             ref={panelRef}
-            withBorder
-            radius="lg"
             p="lg"
             w={280}
           >
-            <Title order={3} mb="sm">{activeHorizon.label}</Title>
+            <Title
+              order={3}
+              mb="sm"
+              c="charcoal.9"
+            >{activeHorizon.label}
+            </Title>
             <Stack gap="xs">
               <MunsellChip
                 colourText={activeHorizon.colourText}
@@ -105,10 +97,15 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
                 chroma={activeHorizon.colourChroma}
               />
               {activeHorizon.characteristics.map((characteristic) => (
-                <Text key={characteristic.id} size="sm">&bull; {characteristic.text}</Text>
+                <Text
+                  key={characteristic.id}
+                  size="sm"
+                  c="charcoal.7"
+                >&bull; {characteristic.text}
+                </Text>
               ))}
             </Stack>
-          </Card>
+          </SectionCard>
         )}
       </Group>
     </Stack>
@@ -119,14 +116,23 @@ interface QuestionStepViewProps {
   question: Question;
   selectedOptionId: string | null;
   onSelect: (value: string) => void;
+  revealed: boolean;
   error: string | null;
 }
 
-function QuestionStepView({ question, selectedOptionId, onSelect, error }: QuestionStepViewProps) {
+function QuestionStepView({
+  question, selectedOptionId, onSelect, revealed, error
+}: QuestionStepViewProps) {
+  const selectedOption = question.options.find((option) => String(option.id) === selectedOptionId);
+  const correctOption = question.options.find((option) => option.isCorrect);
+
   return (
     <Stack gap="md">
       <Text fw={600}>{question.prompt}</Text>
-      <Radio.Group value={selectedOptionId} onChange={onSelect}>
+      <Radio.Group
+        value={selectedOptionId}
+        onChange={onSelect}
+      >
         <Stack gap="sm">
           {question.options.map((option) => (
             <Radio.Card
@@ -134,6 +140,7 @@ function QuestionStepView({ question, selectedOptionId, onSelect, error }: Quest
               value={String(option.id)}
               radius="xl"
               p="md"
+              style={{ pointerEvents: revealed ? 'none' : undefined }}
             >
               <Group>
                 <Radio.Indicator />
@@ -144,60 +151,14 @@ function QuestionStepView({ question, selectedOptionId, onSelect, error }: Quest
         </Stack>
       </Radio.Group>
       {error && <Text c="red">{error}</Text>}
-    </Stack>
-  );
-}
-
-interface SoilFamilyStepViewProps {
-  monolith: Monolith;
-  values: Record<number, string>;
-  onFieldChange: (fieldId: number, value: string) => void;
-  finalCodeValue: string;
-  onFinalCodeChange: (value: string) => void;
-  error: string | null;
-}
-
-function SoilFamilyStepView({
-  monolith, values, onFieldChange, finalCodeValue, onFinalCodeChange, error
-}: SoilFamilyStepViewProps) {
-  if (!monolith.soilFamilyCode) {
-    return <Text c="dimmed">TODO: soil family code content missing for this chapter.</Text>;
-  }
-
-  return (
-    <Stack gap="md">
-      <Text fw={600}>Use the Soil Family Table to determine the soil family. Complete the Soil Family Code.</Text>
-      <Table withTableBorder>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Characteristic</Table.Th>
-            <Table.Th>Your Answer</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {monolith.soilFamilyCode.fields.map((field) => (
-            <Table.Tr key={field.id}>
-              <Table.Td>{field.label}</Table.Td>
-              <Table.Td>
-                <TextInput
-                  value={values[field.id] ?? ''}
-                  onChange={(event) => onFieldChange(field.id, event.currentTarget.value)}
-                  w={80}
-                />
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-      <Group>
-        <Text fw={600}>Final Soil Family Code</Text>
-        <TextInput
-          value={finalCodeValue}
-          onChange={(event) => onFinalCodeChange(event.currentTarget.value)}
-          w={140}
-        />
-      </Group>
-      {error && <Text c="red">{error}</Text>}
+      {revealed && (
+        <Text
+          fw={600}
+          c={selectedOption?.isCorrect ? 'moss.7' : 'red.7'}
+        >
+          {selectedOption?.isCorrect ? 'Correct.' : `Incorrect. The correct answer is: ${correctOption?.text}.`}
+        </Text>
+      )}
     </Stack>
   );
 }
@@ -214,49 +175,35 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
   const steps = buildSteps(monolith);
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [mcqError, setMcqError] = useState<string | null>(null);
-  const [familyValues, setFamilyValues] = useState<Record<number, string>>({});
-  const [finalCodeValue, setFinalCodeValue] = useState('');
-  const [familyError, setFamilyError] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const step = steps[stepIndex];
   const isLastStep = stepIndex === steps.length - 1;
+  const awaitingSubmit = step.kind === 'question' && !revealed;
 
   function goToStep(index: number) {
     setStepIndex(index);
     setSelectedOptionId(null);
-    setMcqError(null);
-    setFamilyError(null);
+    setRevealed(false);
+    setError(null);
+  }
+
+  function handleSubmit() {
+    if (!selectedOptionId) {
+      setError('Please select an answer.');
+      return;
+    }
+    setError(null);
+    setRevealed(true);
   }
 
   function handleNext() {
-    if (step.kind === 'question') {
-      const correctOption = step.question.options.find((option) => option.isCorrect);
-      if (!selectedOptionId || String(correctOption?.id) !== selectedOptionId) {
-        setMcqError('Incorrect. Please review your answer.');
-        return;
-      }
-      setMcqError(null);
-    }
-
-    if (step.kind === 'soilFamily' && monolith.soilFamilyCode) {
-      const allFieldsCorrect = monolith.soilFamilyCode.fields.every(
-        (field) => (familyValues[field.id] ?? '').trim() === field.correctValue
-      );
-      const codeCorrect = finalCodeValue.trim() === monolith.soilFamilyCode.finalCode;
-      if (!allFieldsCorrect || !codeCorrect) {
-        setFamilyError('Some answers are incorrect. Please review your responses.');
-        return;
-      }
-      setFamilyError(null);
-    }
-
     if (isLastStep) {
       markMonolithCompleted(monolith.id);
       navigate(nextMonolith ? `/tests/${nextMonolith.id}` : '/completed');
       return;
     }
-
     goToStep(stepIndex + 1);
   }
 
@@ -264,7 +211,7 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
     if (!isLastStep) {
       return 'Next';
     }
-    return nextMonolith ? `Continue to ${nextMonolith.name}` : 'Finish';
+    return nextMonolith ? `Continue to Chapter ${nextMonolith.orderIndex}` : 'Finish';
   }
 
   return (
@@ -273,22 +220,15 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
       mx="auto"
       gap="lg"
     >
-      <Title order={1}>
-        Chapter {monolith.orderIndex}:{' '}
-        <Text
-          span
-          fw={700}
-          inherit
+      <SectionCard p="xl">
+        <Title
+          order={1}
+          mb="lg"
+          c="charcoal.9"
         >
-          {monolith.name} Soil
-        </Text>
-      </Title>
+          Chapter {monolith.orderIndex}
+        </Title>
 
-      <Card
-        withBorder
-        radius="lg"
-        p="xl"
-      >
         {step.kind === 'monolith' && <MonolithStepView monolith={monolith} />}
         {step.kind === 'question' && (
           <QuestionStepView
@@ -296,41 +236,31 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
             selectedOptionId={selectedOptionId}
             onSelect={(value) => {
               setSelectedOptionId(value);
-              setMcqError(null);
+              setError(null);
             }}
-            error={mcqError}
+            revealed={revealed}
+            error={error}
           />
         )}
-        {step.kind === 'soilFamily' && (
-          <SoilFamilyStepView
-            monolith={monolith}
-            values={familyValues}
-            onFieldChange={(fieldId, value) => setFamilyValues((prev) => ({
-              ...prev, [fieldId]: value 
-            }))}
-            finalCodeValue={finalCodeValue}
-            onFinalCodeChange={setFinalCodeValue}
-            error={familyError}
-          />
-        )}
-      </Card>
+      </SectionCard>
 
       <Group justify="space-between">
         <Button
           variant="outline"
-          color="terracotta"
+          color="terracotta.7"
           radius="xl"
           disabled={stepIndex === 0}
           onClick={() => goToStep(stepIndex - 1)}
+          style={{ backgroundColor: 'var(--mantine-color-terracotta-1)' }}
         >
           Previous
         </Button>
         <Button
           color="terracotta"
           radius="xl"
-          onClick={handleNext}
+          onClick={awaitingSubmit ? handleSubmit : handleNext}
         >
-          {nextButtonLabel()}
+          {awaitingSubmit ? 'Submit Answer' : nextButtonLabel()}
         </Button>
       </Group>
     </Stack>
