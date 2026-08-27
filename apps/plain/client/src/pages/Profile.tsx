@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Avatar, Button, Divider, Flex, Group, List, Stack, Text, Title } from '@mantine/core';
 import { Icon } from '@shared/ui/Icon';
+import { authApi } from '@shared/api/services/auth.api';
 import { useContent } from '../context/ContentContext';
 import SectionCard from '../components/SectionCard';
 
@@ -20,6 +23,19 @@ const mentorInfo = {
 
 function Profile() {
   const { monoliths, completedMonolithIds } = useContent();
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await authApi.logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Failed to log out', error);
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <Stack maw={1100} mx="auto">
@@ -97,6 +113,16 @@ function Profile() {
               </Text>
               <Text fz="sm" c="charcoal.7">{currentUser.mentorName}</Text>
             </Stack>
+
+            <Divider mt="md" />
+            <Button
+              variant="subtle"
+              color="red"
+              loading={loggingOut}
+              onClick={handleLogout}
+            >
+              Log out
+            </Button>
           </Stack>
 
           <Stack

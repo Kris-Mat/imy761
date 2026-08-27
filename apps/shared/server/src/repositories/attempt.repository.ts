@@ -1,3 +1,4 @@
+import type { QuestionCategory } from '@shared/api/models/monolith.model';
 import { getPrismaClient } from '../config/prisma';
 
 export interface QuestionAttemptContext {
@@ -5,6 +6,18 @@ export interface QuestionAttemptContext {
   options: { id: number; isCorrect: boolean; }[];
   levelId: number;
   levelNumber: number;
+}
+
+export interface StudentAttemptRow {
+  userId: number;
+  questionId: number;
+  isCorrect: boolean;
+  startedAt: Date;
+  completedAt: Date | null;
+  question: {
+    prompt: string;
+    category: QuestionCategory;
+  };
 }
 
 export class AttemptRepository {
@@ -45,11 +58,36 @@ export class AttemptRepository {
     selectedOptionId: number;
     isCorrect: boolean;
     pointsEarned: number;
+    questionShownAt: Date;
   }): Promise<void> {
+    const { questionShownAt, ...rest } = data;
     await getPrismaClient().userAttempt.create({
       data: {
-        ...data,
+        ...rest,
+        startedAt: questionShownAt,
         completedAt: new Date()
+      }
+    });
+  }
+
+  // Every attempt (including retries — there is no unique constraint on
+  // userId+questionId, see the model comment) for every USER-role account,
+  // oldest first so callers can take the last entry per question as the
+  // student's current/most-recent answer. Used only by the admin analytics
+  // view, so it's fine to pull the whole table rather than paginating.
+  public async findAllForStudents(): Promise<StudentAttemptRow[]> {
+    return getPrismaClient().userAttempt.findMany({
+      where: { user: { role: 'USER' } },
+      orderBy: { startedAt: 'asc' },
+      select: {
+        userId: true,
+        questionId: true,
+        isCorrect: true,
+        startedAt: true,
+        completedAt: true,
+        question: { select: {
+          prompt: true, category: true
+        } }
       }
     });
   }

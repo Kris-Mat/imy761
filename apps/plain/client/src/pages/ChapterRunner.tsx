@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   Button, Group, Image, Loader, Radio, Stack, Text, Title
 } from '@mantine/core';
 import type { Horizon, Monolith, Question } from '@shared/api/models/monolith.model';
+import { authApi } from '@shared/api/services/auth.api';
+import { userApi } from '@shared/api/services/users.api';
 import { useContent } from '../context/ContentContext';
 import MunsellChip from '../components/MunsellChip';
 import SectionCard from '../components/SectionCard';
@@ -166,21 +168,38 @@ function QuestionStepView({
 interface ChapterRunnerInnerProps {
   monolith: Monolith;
   nextMonolith: Monolith | undefined;
+  initialStepIndex: number;
 }
 
-function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps) {
+function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: ChapterRunnerInnerProps) {
   const navigate = useNavigate();
   const { markMonolithCompleted } = useContent();
 
   const steps = buildSteps(monolith);
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(initialStepIndex);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const step = steps[stepIndex];
   const isLastStep = stepIndex === steps.length - 1;
   const awaitingSubmit = step.kind === 'question' && !revealed;
+
+  // Timestamp the current question was first shown, used as the attempt's
+  // startedAt so time-on-task reflects real elapsed time rather than the
+  // near-zero gap between server-side startedAt/completedAt at submit-time.
+  // Adjusts state during render (the React-endorsed pattern for deriving
+  // state from a changed value) rather than in an effect, so it takes effect
+  // in the same render instead of triggering an extra one.
+  const [questionShownAt, setQuestionShownAt] = useState<string>(() => new Date().toISOString());
+  const [shownAtStepIndex, setShownAtStepIndex] = useState(stepIndex);
+  if (stepIndex !== shownAtStepIndex) {
+    setShownAtStepIndex(stepIndex);
+    if (step.kind === 'question') {
+      setQuestionShownAt(new Date().toISOString());
+    }
+  }
 
   function goToStep(index: number) {
     setStepIndex(index);
@@ -189,13 +208,25 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
     setError(null);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!selectedOptionId) {
       setError('Please select an answer.');
       return;
     }
+    if (step.kind !== 'question') return;
     setError(null);
-    setRevealed(true);
+    setSubmitting(true);
+    try {
+      const session = await authApi.getSession();
+      if (!session) throw new Error('Not authenticated');
+      await userApi.submitAttempt(session.access_token, step.question.id, Number(selectedOptionId), questionShownAt);
+      setRevealed(true);
+    } catch (submitError) {
+      console.error('Failed to submit attempt', submitError);
+      setError('Failed to submit your answer. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleNext() {
@@ -258,6 +289,7 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
         <Button
           color="terracotta"
           radius="xl"
+          loading={awaitingSubmit && submitting}
           onClick={awaitingSubmit ? handleSubmit : handleNext}
         >
           {awaitingSubmit ? 'Submit Answer' : nextButtonLabel()}
@@ -269,6 +301,7 @@ function ChapterRunnerInner({ monolith, nextMonolith }: ChapterRunnerInnerProps)
 
 function ChapterRunner() {
   const { monolithId } = useParams<{ monolithId: string; }>();
+  const [searchParams] = useSearchParams();
   const { monoliths, loading } = useContent();
 
   if (loading) {
@@ -281,13 +314,24 @@ function ChapterRunner() {
     return <Navigate to="/tests" replace />;
   }
 
+  // ?step=N lets the Tests page deep-link straight to a specific question —
+  // step 0 (the default) is always the monolith overview, steps 1..N are
+  // monolith.questions in order. Clamped so a stale/hand-typed value can't
+  // point past the end of this chapter.
+  const lastStepIndex = monolith.questions.length;
+  const requestedStep = Number(searchParams.get('step'));
+  const initialStepIndex = Number.isFinite(requestedStep)
+    ? Math.min(Math.max(requestedStep, 0), lastStepIndex)
+    : 0;
+
   const nextMonolith = monoliths.find((m) => m.orderIndex === monolith.orderIndex + 1);
 
   return (
     <ChapterRunnerInner
-      key={monolith.id}
+      key={`${monolith.id}-${initialStepIndex}`}
       monolith={monolith}
       nextMonolith={nextMonolith}
+      initialStepIndex={initialStepIndex}
     />
   );
 }

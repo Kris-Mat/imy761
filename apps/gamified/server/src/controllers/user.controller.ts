@@ -103,6 +103,6 @@ export class UserController extends Controller {
     @Request() request: ExpressRequest,
     @Body() body: SubmitAttemptRequest
   ): Promise<AttemptResult> {
-    return attemptService.submitAttempt(request.user!, body.questionId, body.selectedOptionId);
+    return attemptService.submitAttempt(request.user!, body.questionId, body.selectedOptionId, body.questionShownAt);
   }
 }

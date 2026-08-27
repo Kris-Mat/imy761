@@ -13,7 +13,8 @@ export class AttemptService {
   public async submitAttempt(
     claims: AuthenticatedUser,
     questionId: number,
-    selectedOptionId: number
+    selectedOptionId: number,
+    questionShownAt: string
   ): Promise<AttemptResult> {
     const user = await userRepository.findBySupabaseId(claims.sub);
     if (!user) {
@@ -38,7 +39,8 @@ export class AttemptService {
       questionId,
       selectedOptionId,
       isCorrect,
-      pointsEarned: isCorrect ? POINTS_PER_CORRECT_ANSWER : 0
+      pointsEarned: isCorrect ? POINTS_PER_CORRECT_ANSWER : 0,
+      questionShownAt: new Date(questionShownAt)
     });
 
     // Levels are all playable in any order, so currentLevelId is no longer a

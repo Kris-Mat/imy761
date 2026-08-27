@@ -2,6 +2,7 @@ import { userRepository } from '../repositories/user.repository';
 import { levelRepository } from '../repositories/level.repository';
 import type { User, AvatarConfig } from '@shared/api/models/user.model';
 import type { AuthenticatedUser } from '../middleware/auth.middleware';
+import { HttpError } from '../lib/http-error';
 
 export class UserService {
 
@@ -61,6 +62,17 @@ export class UserService {
       throw new Error('User not found; sync the user before saving an avatar');
     }
     return userRepository.upsertAvatarConfig(user.id, avatarConfig);
+  }
+
+  // The JWT claims Supabase issues don't carry role (see AuthenticatedUser),
+  // so admin-only endpoints must look the requester up in the DB on every
+  // call rather than trusting anything in the token itself.
+  public async requireAdmin(claims: AuthenticatedUser): Promise<User> {
+    const user = await userRepository.findBySupabaseId(claims.sub);
+    if (!user || user.role !== 'ADMIN') {
+      throw new HttpError(403, 'Admin role required');
+    }
+    return user;
   }
 
 }
