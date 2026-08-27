@@ -4,6 +4,7 @@ import { NavLink as RouterNavLink, Outlet } from 'react-router';
 import NiceAvatar, { genConfig } from 'react-nice-avatar';
 import type { AvatarFullConfig } from 'react-nice-avatar';
 import { Icon } from '@shared/ui/Icon';
+import { AdminNavLink } from '@shared/ui/AdminNavLink';
 import { ScrollSmoother } from '../lib/gsap';
 import { UserProvider, useUser } from '../context/UserContext';
 
@@ -98,6 +99,7 @@ function Layout() {
           to="/quests"
           label="Quests"
         />
+        <AdminNavLink />
         <ProfileNavAvatar />
       </Group>
 

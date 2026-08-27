@@ -1,6 +1,7 @@
 import { Anchor, Box, Group } from '@mantine/core';
 import { NavLink as RouterNavLink, Outlet } from 'react-router';
 import { Icon } from '@shared/ui/Icon';
+import { AdminNavLink } from '@shared/ui/AdminNavLink';
 import { ContentProvider } from '../context/ContentContext';
 import StaticMountainScene from './StaticMountainScene';
 
@@ -57,6 +58,7 @@ function Layout() {
           to="/tests"
           label="Tests"
         />
+        <AdminNavLink />
         <NavItem
           to="/profile"
           label="Profile"

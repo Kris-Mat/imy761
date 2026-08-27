@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '../config/prisma';
-import type { User, AvatarConfig } from '@shared/api/models/user.model';
+import type { User, AvatarConfig, Role } from '@shared/api/models/user.model';
 
 const withPersonalisation = { personalisation: true } as const;
 
@@ -21,8 +21,11 @@ function toUser(row: UserRow): User {
 
 export class UserRepository {
 
-  public async findAll(): Promise<User[]> {
-    const rows = await getPrismaClient().user.findMany({ include: withPersonalisation });
+  public async findAll(filter?: { role?: Role; }): Promise<User[]> {
+    const rows = await getPrismaClient().user.findMany({
+      where: filter?.role ? { role: filter.role } : undefined,
+      include: withPersonalisation
+    });
     return rows.map(toUser);
   }
 

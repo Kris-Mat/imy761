@@ -83,6 +83,127 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"AttemptResult": {
+				"properties": {
+					"isCorrect": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"isCorrect"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"SubmitAttemptRequest": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"selectedOptionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"questionShownAt": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"questionId",
+					"selectedOptionId",
+					"questionShownAt"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"QuestionCategory": {
+				"type": "string",
+				"enum": [
+					"DIAGNOSTIC_HORIZONS",
+					"SOIL_FORM",
+					"SOIL_FAMILY_CODE",
+					"LANDSCAPE_POSITION",
+					"SUITABILITY"
+				]
+			},
+			"StudentQuestionStat": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"category": {
+						"$ref": "#/components/schemas/QuestionCategory"
+					},
+					"prompt": {
+						"type": "string"
+					},
+					"attempts": {
+						"type": "number",
+						"format": "double"
+					},
+					"retryCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"correct": {
+						"type": "boolean"
+					},
+					"timeTakenSeconds": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					}
+				},
+				"required": [
+					"questionId",
+					"category",
+					"prompt",
+					"attempts",
+					"retryCount",
+					"correct",
+					"timeTakenSeconds"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"StudentAnalytics": {
+				"properties": {
+					"userId": {
+						"type": "number",
+						"format": "double"
+					},
+					"username": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"firstName": {
+						"type": "string"
+					},
+					"lastName": {
+						"type": "string"
+					},
+					"questions": {
+						"items": {
+							"$ref": "#/components/schemas/StudentQuestionStat"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"userId",
+					"username",
+					"email",
+					"firstName",
+					"lastName",
+					"questions"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"HorizonCharacteristic": {
 				"properties": {
 					"id": {
@@ -151,16 +272,6 @@
 				],
 				"type": "object",
 				"additionalProperties": false
-			},
-			"QuestionCategory": {
-				"type": "string",
-				"enum": [
-					"DIAGNOSTIC_HORIZONS",
-					"SOIL_FORM",
-					"SOIL_FAMILY_CODE",
-					"LANDSCAPE_POSITION",
-					"SUITABILITY"
-				]
 			},
 			"AnswerOption": {
 				"properties": {
@@ -382,6 +493,65 @@
 							"application/json": {
 								"schema": {
 									"$ref": "#/components/schemas/User"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/me/attempts": {
+			"post": {
+				"operationId": "SubmitAttempt",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AttemptResult"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/SubmitAttemptRequest"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/students": {
+			"get": {
+				"operationId": "GetStudentAnalytics",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/StudentAnalytics"
+									},
+									"type": "array"
 								}
 							}
 						}

@@ -643,6 +643,23 @@ function QuestRunnerInner({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Timestamp the current question was first shown, used as the attempt's
+  // startedAt so time-on-task reflects real elapsed time rather than the
+  // near-zero gap between server-side startedAt/completedAt at submit-time.
+  // Recomputed only when this instance's phase actually reaches 'question'
+  // (once per mount — phase only ever moves intro/explore -> question).
+  // Adjusts state during render (the React-endorsed pattern for deriving
+  // state from a changed value) rather than in an effect, so it takes effect
+  // in the same render instead of triggering an extra one.
+  const [questionShownAt, setQuestionShownAt] = useState<string>(() => new Date().toISOString());
+  const [shownAtPhase, setShownAtPhase] = useState(phase);
+  if (phase !== shownAtPhase) {
+    setShownAtPhase(phase);
+    if (!isComplete && phase === 'question') {
+      setQuestionShownAt(new Date().toISOString());
+    }
+  }
+
   // Scoring happens server-side, so this farm's fresh score only exists once
   // refreshFarms() resolves — until then, show a loader rather than a stale
   // (pre-quest) score.
@@ -683,7 +700,7 @@ function QuestRunnerInner({
     try {
       const session = await authApi.getSession();
       if (!session) throw new Error('Not authenticated');
-      await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId));
+      await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId), questionShownAt);
       setRevealed(true);
     } catch (submitError) {
       console.error('Failed to submit attempt', submitError);

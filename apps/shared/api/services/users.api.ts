@@ -3,6 +3,7 @@ import { type User, type AvatarConfig } from "../models/user.model";
 import { type UserStats } from "../models/user-stats.model";
 import { type FarmProgress } from "../models/farm.model";
 import { type AttemptResult } from "../models/attempt.model";
+import { type StudentAnalytics } from "../models/admin.model";
 
 class UsersApi extends BaseApi {
   getUsers(accessToken: string): Promise<User[]> {
@@ -50,12 +51,24 @@ class UsersApi extends BaseApi {
     );
   }
 
-  submitAttempt(accessToken: string, questionId: number, selectedOptionId: number): Promise<AttemptResult> {
+  submitAttempt(
+    accessToken: string,
+    questionId: number,
+    selectedOptionId: number,
+    questionShownAt: string
+  ): Promise<AttemptResult> {
     return this.post<AttemptResult>(
       `users/me/attempts`,
       {
-        questionId, selectedOptionId 
+        questionId, selectedOptionId, questionShownAt
       },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
+  getStudentAnalytics(accessToken: string): Promise<StudentAnalytics[]> {
+    return this.get<StudentAnalytics[]>(
+      `admin/students`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
   }

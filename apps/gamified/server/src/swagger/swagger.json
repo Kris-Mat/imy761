@@ -251,11 +251,102 @@
 					"selectedOptionId": {
 						"type": "number",
 						"format": "double"
+					},
+					"questionShownAt": {
+						"type": "string"
 					}
 				},
 				"required": [
 					"questionId",
-					"selectedOptionId"
+					"selectedOptionId",
+					"questionShownAt"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"QuestionCategory": {
+				"type": "string",
+				"enum": [
+					"DIAGNOSTIC_HORIZONS",
+					"SOIL_FORM",
+					"SOIL_FAMILY_CODE",
+					"LANDSCAPE_POSITION",
+					"SUITABILITY"
+				]
+			},
+			"StudentQuestionStat": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"category": {
+						"$ref": "#/components/schemas/QuestionCategory"
+					},
+					"prompt": {
+						"type": "string"
+					},
+					"attempts": {
+						"type": "number",
+						"format": "double"
+					},
+					"retryCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"correct": {
+						"type": "boolean"
+					},
+					"timeTakenSeconds": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					}
+				},
+				"required": [
+					"questionId",
+					"category",
+					"prompt",
+					"attempts",
+					"retryCount",
+					"correct",
+					"timeTakenSeconds"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"StudentAnalytics": {
+				"properties": {
+					"userId": {
+						"type": "number",
+						"format": "double"
+					},
+					"username": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"firstName": {
+						"type": "string"
+					},
+					"lastName": {
+						"type": "string"
+					},
+					"questions": {
+						"items": {
+							"$ref": "#/components/schemas/StudentQuestionStat"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"userId",
+					"username",
+					"email",
+					"firstName",
+					"lastName",
+					"questions"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -328,16 +419,6 @@
 				],
 				"type": "object",
 				"additionalProperties": false
-			},
-			"QuestionCategory": {
-				"type": "string",
-				"enum": [
-					"DIAGNOSTIC_HORIZONS",
-					"SOIL_FORM",
-					"SOIL_FAMILY_CODE",
-					"LANDSCAPE_POSITION",
-					"SUITABILITY"
-				]
 			},
 			"AnswerOption": {
 				"properties": {
@@ -718,6 +799,32 @@
 						}
 					}
 				}
+			}
+		},
+		"/admin/students": {
+			"get": {
+				"operationId": "GetStudentAnalytics",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/StudentAnalytics"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
 			}
 		},
 		"/monoliths": {
