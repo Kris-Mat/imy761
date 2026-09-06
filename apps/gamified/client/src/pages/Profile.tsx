@@ -12,8 +12,9 @@ import { useUser } from '../context/UserContext';
 import FarmerProgressGrid from '../components/FarmerProgressGrid';
 import AvatarEditor from '../components/AvatarEditor';
 import StaticMountainScene from '../components/StaticMountainScene';
+import TrophyCase from '../components/TrophyCase';
 
-type ProfileTab = 'progress' | 'details' | 'avatar';
+type ProfileTab = 'progress' | 'achievements' | 'details' | 'avatar';
 
 interface DetailsForm {
   username: string;
@@ -43,7 +44,9 @@ function NavTabButton({ label, active, onClick }: { label: string; active: boole
 }
 
 function ProfileContent() {
-  const { user, farms, updateUser } = useUser();
+  const {
+    user, farms, achievements, updateUser
+  } = useUser();
   const [activeTab, setActiveTab] = useState<ProfileTab>('progress');
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -219,6 +222,11 @@ function ProfileContent() {
                   onClick={() => selectTab('progress')}
                 />
                 <NavTabButton
+                  label="Achievements"
+                  active={activeTab === 'achievements'}
+                  onClick={() => selectTab('achievements')}
+                />
+                <NavTabButton
                   label="User details"
                   active={activeTab === 'details'}
                   onClick={() => selectTab('details')}
@@ -303,6 +311,19 @@ function ProfileContent() {
                       </Text>
                     </Stack>
                   </Stack>
+                </Stack>
+              )}
+
+              {activeTab === 'achievements' && (
+                <Stack gap="md">
+                  <Text
+                    fz="xl"
+                    fw={700}
+                    c="charcoal.9"
+                  >
+                    My Achievements
+                  </Text>
+                  <TrophyCase achievements={achievements} />
                 </Stack>
               )}
 

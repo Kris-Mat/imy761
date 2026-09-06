@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useRef } from 'react';
 import {
-  Box, Flex, SimpleGrid, Stack, Text, Title
+  Box, Flex, Group, Loader, SimpleGrid, Stack, Text, Title
 } from '@mantine/core';
 import NiceAvatar, { genConfig } from 'react-nice-avatar';
 import type { AvatarFullConfig } from 'react-nice-avatar';
+import { Icon } from '@shared/ui/Icon';
 import MountainBackground from '../components/MountainBackground';
 import FarmRoad from '../components/FarmRoad';
 import StatCard from '../components/StatCard';
 import SoilProfileBackground from '../components/SoilProfileBackground';
 import { gsap } from '../lib/gsap';
 import { useUser } from '../context/UserContext';
+import { categoryLabels } from '../lib/questionCategory';
 
 function Home() {
-  const { user, farms } = useUser();
+  const { user, farms, stats } = useUser();
   // Persisted per-user by UserContext on first login; genConfig() just fills
   // in a temporary random one for the brief window before that resolves.
   const avatarConfig = useMemo(
@@ -20,22 +22,6 @@ function Home() {
     [user?.avatarConfig]
   );
 
-  // Hardcoded for now — the stats API doesn't expose per-category accuracy
-  // yet (would need aggregating UserAttempt by Question.category server-side).
-  const displayStats = [
-    {
-      label: 'Horizon Identification', value: '70%'
-    },
-    {
-      label: 'Colour Classification', value: '82%'
-    },
-    {
-      label: 'Soil Profile Analysis', value: '79%'
-    },
-    {
-      label: 'Land Suitability', value: '86%'
-    }
-  ];
   const heroSectionRef = useRef<HTMLDivElement>(null);
   const statsSectionRef = useRef<HTMLDivElement>(null);
   const heroContentRef = useRef<HTMLDivElement>(null);
@@ -147,8 +133,66 @@ function Home() {
                 size="lg"
                 mt="sm"
               >
-                Your farms are waiting — pick up where you left off and keep the streak going.
+                {stats && stats.currentStreak > 0
+                  ? 'Your farms are waiting — pick up where you left off and keep the streak going.'
+                  : 'Your farms are waiting — answer a question today to start your streak.'}
               </Text>
+              <Group
+                gap="lg"
+                mt="xs"
+              >
+                <Group gap={6}>
+                  <Icon
+                    name="Flame"
+                    size={20}
+                    weight="fill"
+                    color="var(--mantine-color-terracotta-6)"
+                  />
+                  <Text
+                    fz="sm"
+                    fw={600}
+                    c="charcoal.7"
+                  >
+                    {stats && stats.currentStreak > 0
+                      ? `${stats.currentStreak}-day streak`
+                      : 'No streak yet'}
+                  </Text>
+                </Group>
+                <Group gap={6}>
+                  <Icon
+                    name="Star"
+                    size={20}
+                    weight="fill"
+                    color="var(--mantine-color-mustard-6)"
+                  />
+                  <Text
+                    fz="sm"
+                    fw={600}
+                    c="charcoal.7"
+                  >
+                    {stats?.totalXp ?? 0}
+                    {' '}
+                    XP
+                  </Text>
+                </Group>
+                {stats?.rank && (
+                  <Group gap={6}>
+                    <Icon
+                      name="Medal"
+                      size={20}
+                      weight="fill"
+                      color="var(--mantine-color-moss-7)"
+                    />
+                    <Text
+                      fz="sm"
+                      fw={600}
+                      c="charcoal.7"
+                    >
+                      {stats.rank}
+                    </Text>
+                  </Group>
+                )}
+              </Group>
             </Stack>
           </Flex>
         </Flex>
@@ -172,23 +216,32 @@ function Home() {
         }}
       >
         <SoilProfileBackground statsSectionRef={statsSectionRef} />
-        <SimpleGrid
-          pos="relative"
-          maw={700}
-          w="50%"
-          mx="auto"
-          cols={2}
-          spacing="lg"
-          style={{ zIndex: 1 }}
-        >
-          {displayStats.map((stat) => (
-            <StatCard
-              key={stat.label}
-              label={stat.label}
-              value={stat.value}
-            />
-          ))}
-        </SimpleGrid>
+        {stats ? (
+          <SimpleGrid
+            pos="relative"
+            maw={700}
+            w="50%"
+            mx="auto"
+            cols={2}
+            spacing="lg"
+            style={{ zIndex: 1 }}
+          >
+            {(stats.categoryAccuracy ?? []).map((entry) => (
+              <StatCard
+                key={entry.category}
+                label={categoryLabels[entry.category]}
+                value={entry.accuracyPercent !== null ? `${entry.accuracyPercent}%` : 'Not attempted'}
+              />
+            ))}
+          </SimpleGrid>
+        ) : (
+          <Loader
+            pos="relative"
+            color="terracotta"
+            style={{ zIndex: 1 }}
+            mx="auto"
+          />
+        )}
       </Flex>
     </Box>
   );
