@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Box, Button, Divider, Flex, Group, Paper, Stack, Text, TextInput, UnstyledButton
 } from '@mantine/core';
@@ -15,6 +15,14 @@ import StaticMountainScene from '../components/StaticMountainScene';
 import TrophyCase from '../components/TrophyCase';
 
 type ProfileTab = 'progress' | 'achievements' | 'details' | 'avatar';
+const PROFILE_TABS: ProfileTab[] = ['progress', 'achievements', 'details', 'avatar'];
+
+// Lets Dashboard's trophy-case preview link straight into the Achievements
+// tab via /profile?tab=achievements — anything else (missing, mistyped,
+// hand-edited) falls back to the default tab instead of erroring.
+function toProfileTab(value: string | null): ProfileTab {
+  return PROFILE_TABS.includes(value as ProfileTab) ? (value as ProfileTab) : 'progress';
+}
 
 interface DetailsForm {
   username: string;
@@ -47,7 +55,8 @@ function ProfileContent() {
   const {
     user, farms, achievements, updateUser
   } = useUser();
-  const [activeTab, setActiveTab] = useState<ProfileTab>('progress');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<ProfileTab>(() => toProfileTab(searchParams.get('tab')));
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
 

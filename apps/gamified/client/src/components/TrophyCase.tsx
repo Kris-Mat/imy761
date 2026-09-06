@@ -4,6 +4,11 @@ import type { Achievement } from '@shared/api/models/achievement.model';
 
 interface TrophyCaseProps {
   achievements: Achievement[];
+  // When set, renders a condensed preview of only the `limit` most recently
+  // earned achievements (locked ones omitted) instead of the full
+  // locked+unlocked grid — used by Dashboard's trophy case preview, which
+  // links through to the full case on Profile.
+  limit?: number;
 }
 
 function formatEarnedAt(earnedAt: string) {
@@ -70,14 +75,23 @@ function TrophyBadge({ achievement }: { achievement: Achievement; }) {
   );
 }
 
-function TrophyCase({ achievements }: TrophyCaseProps) {
-  if (achievements.length === 0) {
+function TrophyCase({ achievements, limit }: TrophyCaseProps) {
+  const displayed = limit
+    ? achievements
+      .filter((achievement) => achievement.earned && achievement.earnedAt)
+      .sort((a, b) => new Date(b.earnedAt!).getTime() - new Date(a.earnedAt!).getTime())
+      .slice(0, limit)
+    : achievements;
+
+  if (displayed.length === 0) {
     return (
       <Text
         fz="sm"
         c="charcoal.6"
       >
-        No achievements to show yet — keep playing to unlock some!
+        {limit
+          ? 'No achievements earned yet — keep playing to unlock some!'
+          : 'No achievements to show yet — keep playing to unlock some!'}
       </Text>
     );
   }
@@ -89,7 +103,7 @@ function TrophyCase({ achievements }: TrophyCaseProps) {
       }}
       spacing="md"
     >
-      {achievements.map((achievement) => (
+      {displayed.map((achievement) => (
         <TrophyBadge
           key={achievement.id}
           achievement={achievement}
