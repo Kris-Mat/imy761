@@ -49,6 +49,22 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "QuestionCategory": {
+        "dataType": "refAlias",
+        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["SOIL_FAMILY_CODE"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "CategoryAccuracy": {
+        "dataType": "refObject",
+        "properties": {
+            "category": {"ref":"QuestionCategory","required":true},
+            "correct": {"dataType":"double","required":true},
+            "attempted": {"dataType":"double","required":true},
+            "accuracyPercent": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "UserStats": {
         "dataType": "refObject",
         "properties": {
@@ -58,6 +74,7 @@ const models: TsoaRoute.Models = {
             "correctAnswers": {"dataType":"double","required":true},
             "currentStreak": {"dataType":"double","required":true},
             "badgesEarned": {"dataType":"double","required":true},
+            "categoryAccuracy": {"dataType":"array","array":{"dataType":"refObject","ref":"CategoryAccuracy"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -138,11 +155,6 @@ const models: TsoaRoute.Models = {
             "questionShownAt": {"dataType":"string","required":true},
         },
         "additionalProperties": false,
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "QuestionCategory": {
-        "dataType": "refAlias",
-        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["SOIL_FAMILY_CODE"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "StudentQuestionStat": {

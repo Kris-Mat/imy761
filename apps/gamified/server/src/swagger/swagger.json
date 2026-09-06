@@ -83,6 +83,44 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"QuestionCategory": {
+				"type": "string",
+				"enum": [
+					"DIAGNOSTIC_HORIZONS",
+					"SOIL_FORM",
+					"SOIL_FAMILY_CODE",
+					"LANDSCAPE_POSITION",
+					"SUITABILITY"
+				]
+			},
+			"CategoryAccuracy": {
+				"properties": {
+					"category": {
+						"$ref": "#/components/schemas/QuestionCategory"
+					},
+					"correct": {
+						"type": "number",
+						"format": "double"
+					},
+					"attempted": {
+						"type": "number",
+						"format": "double"
+					},
+					"accuracyPercent": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					}
+				},
+				"required": [
+					"category",
+					"correct",
+					"attempted",
+					"accuracyPercent"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"UserStats": {
 				"properties": {
 					"totalXp": {
@@ -108,6 +146,12 @@
 					"badgesEarned": {
 						"type": "number",
 						"format": "double"
+					},
+					"categoryAccuracy": {
+						"items": {
+							"$ref": "#/components/schemas/CategoryAccuracy"
+						},
+						"type": "array"
 					}
 				},
 				"required": [
@@ -116,7 +160,8 @@
 					"tasksCompleted",
 					"correctAnswers",
 					"currentStreak",
-					"badgesEarned"
+					"badgesEarned",
+					"categoryAccuracy"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -293,16 +338,6 @@
 				],
 				"type": "object",
 				"additionalProperties": false
-			},
-			"QuestionCategory": {
-				"type": "string",
-				"enum": [
-					"DIAGNOSTIC_HORIZONS",
-					"SOIL_FORM",
-					"SOIL_FAMILY_CODE",
-					"LANDSCAPE_POSITION",
-					"SUITABILITY"
-				]
 			},
 			"StudentQuestionStat": {
 				"properties": {
