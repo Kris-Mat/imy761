@@ -192,6 +192,36 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"Achievement": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"title": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"earned": {
+						"type": "boolean"
+					},
+					"earnedAt": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"title",
+					"description",
+					"earned",
+					"earnedAt"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"SaveDetailsRequest": {
 				"properties": {
 					"username": {
@@ -687,6 +717,32 @@
 								"schema": {
 									"items": {
 										"$ref": "#/components/schemas/FarmProgress"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/users/me/achievements": {
+			"get": {
+				"operationId": "GetMyAchievements",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/Achievement"
 									},
 									"type": "array"
 								}

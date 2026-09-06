@@ -58,6 +58,44 @@ interface LevelSeed {
   scenario: string;
 }
 
+interface AchievementSeed {
+  title: string;
+  description: string;
+  criteriaCode: string;
+}
+
+// Evaluated by achievement.service.ts after each attempt — criteriaCode is
+// the stable key it matches on. criteriaCode has no @unique constraint in
+// the schema, so these are upserted by a find-then-write below rather than
+// a real prisma upsert().
+const achievements: AchievementSeed[] = [
+  {
+    title: 'First Steps',
+    description: 'Submit your very first attempt.',
+    criteriaCode: 'FIRST_ATTEMPT'
+  },
+  {
+    title: 'Perfect Harvest',
+    description: 'Score 100% on any level.',
+    criteriaCode: 'PERFECT_LEVEL'
+  },
+  {
+    title: 'Rising Rank',
+    description: 'Advance to a new level.',
+    criteriaCode: 'LEVEL_UP'
+  },
+  {
+    title: 'First Try Farmer',
+    description: 'Pass a level without retrying a single question.',
+    criteriaCode: 'NO_RETRY_PASS'
+  },
+  {
+    title: 'Master Farmer',
+    description: 'Complete every level.',
+    criteriaCode: 'MASTER_FARMER'
+  }
+];
+
 // The three Soil Family Codes always appear together as the MCQ options for
 // every chapter's SOIL_FAMILY_CODE question — only which one is correct changes.
 const SOIL_FAMILY_CODES = ['1210', '2130', '0220'];
@@ -477,10 +515,30 @@ async function main(): Promise<void> {
     });
   }
 
+  // Not reset with the content tables below — earned UserAchievement rows
+  // reference these by id, so they're kept stable across reseeds instead.
+  for (const achievement of achievements) {
+    const existing = await prisma.achievementMaster.findFirst({
+      where: { criteriaCode: achievement.criteriaCode }
+    });
+    if (existing) {
+      await prisma.achievementMaster.update({
+        where: { id: existing.id },
+        data: achievement
+      });
+    } else {
+      await prisma.achievementMaster.create({ data: achievement });
+    }
+  }
+
   // Content tables are reset and rebuilt on every seed run so re-seeding
   // stays reproducible while this content is still being finalised.
-  // userGameStat and level go first since level.soilFamilyCodeId FKs into
-  // the soilFamilyCode rows being rebuilt below.
+  // userAttempt goes first since it FKs into question (RESTRICT, not
+  // CASCADE) — deleting a question with attempts still on it would
+  // otherwise fail once the app has actually been played against. Backfilled
+  // via UserService.ensureGameStat on the next /users/sync after this wipes
+  // userGameStat and userAttempt.
+  await prisma.userAttempt.deleteMany();
   await prisma.userGameStat.deleteMany();
   await prisma.level.deleteMany();
   await prisma.soilFamilyField.deleteMany();

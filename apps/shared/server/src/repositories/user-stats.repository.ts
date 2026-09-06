@@ -63,6 +63,13 @@ export class UserStatsRepository {
     });
   }
 
+  public async incrementTotalXp(userId: number, amount: number): Promise<void> {
+    await getPrismaClient().userGameStat.update({
+      where: { userId },
+      data: { totalXp: { increment: amount } }
+    });
+  }
+
 }
 
 export const userStatsRepository = new UserStatsRepository();

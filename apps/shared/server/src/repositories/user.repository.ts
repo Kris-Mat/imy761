@@ -49,9 +49,15 @@ export class UserRepository {
     return toUser(row);
   }
 
+  // Upsert rather than create: also used to backfill a game stat for an
+  // account that already exists but is missing one (see
+  // UserService.syncFromSupabase), where a plain create could race or
+  // collide with a row created by a concurrent sync call.
   public async createGameStat(userId: number, levelId: number): Promise<void> {
-    await getPrismaClient().userGameStat.create({
-      data: {
+    await getPrismaClient().userGameStat.upsert({
+      where: { userId },
+      update: {},
+      create: {
         userId, totalXp: 0, currentLevelId: levelId
       }
     });

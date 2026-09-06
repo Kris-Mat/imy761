@@ -71,6 +71,14 @@ export class LevelRepository {
     });
   }
 
+  public async findQuestionIdsForLevel(levelId: number): Promise<number[]> {
+    const questions = await getPrismaClient().question.findMany({
+      where: { monolith: { soilFamilyCode: { level: { id: levelId } } } },
+      select: { id: true }
+    });
+    return questions.map((question) => question.id);
+  }
+
   // Recomputes a level's score fresh from the DB right after an attempt is
   // recorded, to decide whether it just crossed the passing threshold —
   // deliberately not reusing the FarmProgress list above since that would
