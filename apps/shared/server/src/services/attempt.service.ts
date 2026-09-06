@@ -67,7 +67,7 @@ export class AttemptService {
     }
 
     const totalAttempts = await userStatsRepository.countCompletedAttempts(user.id);
-    await achievementService.evaluateAndAward({
+    const newlyUnlockedAchievements = await achievementService.evaluateAndAward({
       userId: user.id,
       levelId: question.levelId,
       scorePercent,
@@ -76,7 +76,9 @@ export class AttemptService {
       isFirstAttemptEver: totalAttempts === 1
     });
 
-    return { isCorrect };
+    return {
+      isCorrect, leveledUp, newlyUnlockedAchievements
+    };
   }
 
 }

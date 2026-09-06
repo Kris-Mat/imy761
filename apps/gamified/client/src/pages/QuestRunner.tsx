@@ -3,6 +3,9 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   Avatar, Box, Button, Card, Flex, Group, HoverCard, Image, Loader, Paper, Progress, Radio, Stack, Text, Title, UnstyledButton
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import confetti from 'canvas-confetti';
+import type { Achievement } from '@shared/api/models/achievement.model';
 import type { FarmProgress } from '@shared/api/models/farm.model';
 import type { Horizon, Monolith, Question } from '@shared/api/models/monolith.model';
 import { authApi } from '@shared/api/services/auth.api';
@@ -38,6 +41,41 @@ type Mode = 'play' | 'review';
 // gated on it — every quest is playable in any order — it only colours the
 // harvest bar and picks which message the farmer gives at the end.
 const PASSING_SCORE_PERCENT = 75;
+
+// Fires immediately off the attempt response, not deferred to quest
+// completion — achievements like FIRST_ATTEMPT can unlock mid-quest, on any
+// question. A single combined toast when more than one unlocks at once
+// avoids stacking near-identical toasts for one submit.
+function showAchievementUnlockToast(newlyUnlockedAchievements: Achievement[]) {
+  if (newlyUnlockedAchievements.length === 0) return;
+
+  const icon = (
+    <Icon
+      name="Trophy"
+      weight="fill"
+    />
+  );
+
+  if (newlyUnlockedAchievements.length === 1) {
+    const [achievement] = newlyUnlockedAchievements;
+    notifications.show({
+      title: `Achievement unlocked: ${achievement.title}`,
+      message: achievement.description,
+      color: 'mustard',
+      icon,
+      autoClose: 6000
+    });
+    return;
+  }
+
+  notifications.show({
+    title: `${newlyUnlockedAchievements.length} achievements unlocked!`,
+    message: newlyUnlockedAchievements.map((achievement) => achievement.title).join(', '),
+    color: 'mustard',
+    icon,
+    autoClose: 6000
+  });
+}
 
 function FarmerPortrait({ farmerName, farmOrderIndex }: { farmerName: string; farmOrderIndex: number; }) {
   return (
@@ -489,10 +527,54 @@ interface CompletionStepProps {
   onReview: () => void;
 }
 
+// Reuses the same PASSING_SCORE_PERCENT cutoff harvestBarColor already keys
+// off, rather than an unrelated confetti-specific threshold — a merely
+// passing score gets a small celebratory burst, a perfect one gets a bigger
+// two-part burst, and anything below passing gets none.
+function celebrateCompletion(percent: number) {
+  if (percent === 100) {
+    void confetti({
+      particleCount: 180,
+      spread: 100,
+      startVelocity: 45,
+      origin: {
+        x: 0.5, y: 0.6
+      }
+    });
+    setTimeout(() => {
+      void confetti({
+        particleCount: 100,
+        spread: 130,
+        origin: {
+          x: 0.5, y: 0.5
+        }
+      });
+    }, 250);
+    return;
+  }
+  if (percent >= PASSING_SCORE_PERCENT) {
+    void confetti({
+      particleCount: 70,
+      spread: 70,
+      origin: {
+        x: 0.5, y: 0.6
+      }
+    });
+  }
+}
+
 function CompletionStep({
   farmerName, farmOrderIndex, farmName, correctCount, total, continueLabel, onContinue, onRetry, onReview
 }: CompletionStepProps) {
   const percent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+  // Runs once when this completion view mounts (QuestRunnerInner remounts on
+  // a fresh key per step/mode, so this component only ever mounts once per
+  // finished pass) rather than on every render.
+  useEffect(() => {
+    celebrateCompletion(percent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately fire-once-on-mount, not on every percent identity
+  }, []);
 
   return (
     <Stack
@@ -700,8 +782,9 @@ function QuestRunnerInner({
     try {
       const session = await authApi.getSession();
       if (!session) throw new Error('Not authenticated');
-      await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId), questionShownAt);
+      const result = await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId), questionShownAt);
       setRevealed(true);
+      showAchievementUnlockToast(result.newlyUnlockedAchievements);
     } catch (submitError) {
       console.error('Failed to submit attempt', submitError);
       setError('Failed to submit your answer. Please try again.');

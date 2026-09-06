@@ -309,10 +309,21 @@
 				"properties": {
 					"isCorrect": {
 						"type": "boolean"
+					},
+					"leveledUp": {
+						"type": "boolean"
+					},
+					"newlyUnlockedAchievements": {
+						"items": {
+							"$ref": "#/components/schemas/Achievement"
+						},
+						"type": "array"
 					}
 				},
 				"required": [
-					"isCorrect"
+					"isCorrect",
+					"leveledUp",
+					"newlyUnlockedAchievements"
 				],
 				"type": "object",
 				"additionalProperties": false

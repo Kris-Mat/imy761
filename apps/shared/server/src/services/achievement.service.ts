@@ -42,7 +42,10 @@ export class AchievementService {
     });
   }
 
-  public async evaluateAndAward(context: AttemptAchievementContext): Promise<void> {
+  // Returns only the achievements this call actually newly unlocked (not
+  // ones that were already earned and just got re-awarded as a no-op) —
+  // that's what the caller needs to drive an unlock celebration.
+  public async evaluateAndAward(context: AttemptAchievementContext): Promise<Achievement[]> {
     const metCriteriaCodes: string[] = [];
 
     if (context.isFirstAttemptEver) metCriteriaCodes.push('FIRST_ATTEMPT');
@@ -57,12 +60,26 @@ export class AchievementService {
       metCriteriaCodes.push('MASTER_FARMER');
     }
 
-    if (metCriteriaCodes.length === 0) return;
+    if (metCriteriaCodes.length === 0) return [];
 
-    const achievements = await achievementRepository.findByCriteriaCodes(metCriteriaCodes);
+    const [matchingAchievements, earnedByAchievementId] = await Promise.all([
+      achievementRepository.findByCriteriaCodes(metCriteriaCodes),
+      achievementRepository.findEarnedByUser(context.userId)
+    ]);
+    const newlyUnlocked = matchingAchievements.filter((achievement) => !earnedByAchievementId.has(achievement.id));
+
     await Promise.all(
-      achievements.map((achievement) => achievementRepository.awardIfNotEarned(context.userId, achievement.id))
+      matchingAchievements.map((achievement) => achievementRepository.awardIfNotEarned(context.userId, achievement.id))
     );
+
+    const awardedAt = new Date().toISOString();
+    return newlyUnlocked.map((achievement): Achievement => ({
+      id: achievement.id,
+      title: achievement.title,
+      description: achievement.description,
+      earned: true,
+      earnedAt: awardedAt
+    }));
   }
 
   private async passedWithoutAnyRetries(userId: number, levelId: number): Promise<boolean> {

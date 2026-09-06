@@ -6,7 +6,9 @@ import {
   ScrollRestoration
 } from 'react-router';
 import { MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import './index.css';
 import { theme } from './theme';
 
@@ -37,6 +39,7 @@ export function Layout({ children }: { children: React.ReactNode; }) {
 export default function Root() {
   return (
     <MantineProvider theme={theme}>
+      <Notifications position="top-right" />
       <Outlet />
     </MantineProvider>
   );

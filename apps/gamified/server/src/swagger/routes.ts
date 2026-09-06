@@ -143,6 +143,8 @@ const models: TsoaRoute.Models = {
         "dataType": "refObject",
         "properties": {
             "isCorrect": {"dataType":"boolean","required":true},
+            "leveledUp": {"dataType":"boolean","required":true},
+            "newlyUnlockedAchievements": {"dataType":"array","array":{"dataType":"refObject","ref":"Achievement"},"required":true},
         },
         "additionalProperties": false,
     },
