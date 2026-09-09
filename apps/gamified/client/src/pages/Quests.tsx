@@ -6,7 +6,7 @@ import {
 import { Icon, type IconName } from '@shared/ui/Icon';
 import { useUser } from '../context/UserContext';
 import { useMonoliths } from '../hooks/useMonoliths';
-import { categoryLabels } from '../lib/questionCategory';
+import { questionNavLabels } from '../lib/questionCategory';
 import { hasAttempted, hasFinished } from '../lib/questProgress';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
@@ -138,6 +138,7 @@ function Quests() {
               const monolith = monoliths.find((m) => m.orderIndex === farm.orderIndex);
               const attempted = hasAttempted(farm);
               const finished = hasFinished(farm);
+              const navLabels = monolith ? questionNavLabels(monolith.questions) : null;
 
               return (
                 <Accordion.Item
@@ -211,7 +212,7 @@ function Quests() {
                             <QuestRow
                               key={question.id}
                               icon={<QuestionStatusIcon status={status} />}
-                              label={categoryLabels[question.category]}
+                              label={navLabels!.get(question.id)!}
                               onClick={() => navigate(target)}
                             />
                           );
