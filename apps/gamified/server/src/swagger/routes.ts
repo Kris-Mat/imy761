@@ -95,6 +95,8 @@ const models: TsoaRoute.Models = {
             "id": {"dataType":"double","required":true},
             "name": {"dataType":"string","required":true},
             "farmerName": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+            "scenario": {"dataType":"string","required":true},
             "orderIndex": {"dataType":"double","required":true},
             "visited": {"dataType":"boolean","required":true},
             "completed": {"dataType":"boolean","required":true},

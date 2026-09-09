@@ -202,6 +202,12 @@
 					"farmerName": {
 						"type": "string"
 					},
+					"description": {
+						"type": "string"
+					},
+					"scenario": {
+						"type": "string"
+					},
 					"orderIndex": {
 						"type": "number",
 						"format": "double"
@@ -228,6 +234,8 @@
 					"id",
 					"name",
 					"farmerName",
+					"description",
+					"scenario",
 					"orderIndex",
 					"visited",
 					"completed",

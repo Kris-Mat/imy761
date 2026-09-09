@@ -24,6 +24,8 @@ export class LevelRepository {
         levelNumber: true,
         title: true,
         farmerName: true,
+        description: true,
+        scenario: true,
         soilFamilyCode: {
           select: {
             monolith: {
@@ -47,6 +49,8 @@ export class LevelRepository {
         id: level.id,
         name: level.title,
         farmerName: level.farmerName,
+        description: level.description,
+        scenario: level.scenario,
         orderIndex: level.levelNumber,
         visited: questions.some((question) => question.attempts.length > 0),
         completed: questions.length > 0 && questions.every((question) => question.attempts.some((attempt) => attempt.isCorrect)),

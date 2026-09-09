@@ -241,10 +241,13 @@ function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
 }
 
 function IntroStep({
-  farmerName, farmOrderIndex, message, startLabel, onContinue, onReview
+  farmerName, farmOrderIndex, description, message, startLabel, onContinue, onReview
 }: {
   farmerName: string;
   farmOrderIndex: number;
+  // The farm's own blurb (Level.description) — scene-setting context read
+  // before the farmer's ask, not something to invent copy for.
+  description: string;
   message: string;
   startLabel: string;
   onContinue: () => void;
@@ -274,7 +277,16 @@ function IntroStep({
           maw={420}
           style={{ border: '1px solid var(--mantine-color-moss-2)' }}
         >
-          <Text c="charcoal.8">{message}</Text>
+          <Stack gap="xs">
+            <Text
+              fz="sm"
+              fs="italic"
+              c="charcoal.6"
+            >
+              {description}
+            </Text>
+            <Text c="charcoal.8">{message}</Text>
+          </Stack>
         </Paper>
       </Flex>
       <Group
@@ -862,7 +874,8 @@ function QuestRunnerInner({
             <IntroStep
               farmerName={farmerName}
               farmOrderIndex={farmOrderIndex}
-              message={`Every season I run into trouble on ${farmName}. Can you help me work out what's going on with my soil?`}
+              description={farm.description}
+              message={farm.scenario}
               startLabel={attempted ? 'Retry Quest' : 'Start Quest'}
               onContinue={() => setPhase('explore')}
               onReview={finished ? startReview : undefined}
