@@ -153,7 +153,11 @@ function horizonBand(index: number, count: number) {
   };
 }
 
-function HorizonDetails({ horizon, revealLabel = true }: { horizon: Horizon; revealLabel?: boolean; }) {
+function HorizonDetails({ horizon, revealLabel = true, revealCharacteristics = true }: {
+  horizon: Horizon;
+  revealLabel?: boolean;
+  revealCharacteristics?: boolean;
+}) {
   return (
     <Stack gap="xs">
       <Title order={4}>{horizon.label}</Title>
@@ -164,7 +168,7 @@ function HorizonDetails({ horizon, revealLabel = true }: { horizon: Horizon; rev
         chroma={horizon.colourChroma}
         revealLabel={revealLabel}
       />
-      {horizon.characteristics.map((characteristic) => (
+      {revealCharacteristics && horizon.characteristics.map((characteristic) => (
         <Text
           key={characteristic.id}
           size="sm"
@@ -179,12 +183,16 @@ function HorizonDetails({ horizon, revealLabel = true }: { horizon: Horizon; rev
 // The same profile the explore step shows, kept beside the questions so the
 // horizon details stay reachable without leaving the question — hover only, so
 // it can't be mistaken for part of answering.
-function SoilProfileReference({ monolith, hideColourForHorizonId }: {
+function SoilProfileReference({ monolith, hideColourForHorizonId, hideCharacteristicsForHorizonId }: {
   monolith: Monolith;
   // The linked horizon of the current question, while it's still
-  // unanswered — its colour label is suppressed here so hovering it doesn't
-  // hand over the answer. Every other horizon is unaffected.
+  // unanswered — its colour label / characteristics list (independent of
+  // each other, since a horizon can have both a colour and a characteristic
+  // question) is suppressed here so hovering it doesn't hand over the
+  // answer. Every other horizon, and every other detail of the affected
+  // horizon, is unaffected.
   hideColourForHorizonId?: number | null;
+  hideCharacteristicsForHorizonId?: number | null;
 }) {
   return (
     <Stack
@@ -233,6 +241,7 @@ function SoilProfileReference({ monolith, hideColourForHorizonId }: {
                 <HorizonDetails
                   horizon={horizon}
                   revealLabel={horizon.id !== hideColourForHorizonId}
+                  revealCharacteristics={horizon.id !== hideCharacteristicsForHorizonId}
                 />
               </HoverCard.Dropdown>
             </HoverCard>
@@ -442,11 +451,19 @@ interface QuestionStepProps {
 function QuestionStep({
   monolith, question, selectedOptionId, onSelect, revealed, error, unanswered
 }: QuestionStepProps) {
-  // Only set for the new horizon-colour questions (Question.horizonId) —
-  // undefined for every other question type.
+  // Only set for a horizon-linked question (Question.horizonId) — undefined
+  // for every other question type.
   const linkedHorizon = question.horizonId != null
     ? monolith.horizons.find((horizon) => horizon.id === question.horizonId)
     : undefined;
+  // A horizon can have both a colour question and a characteristic
+  // question, so which aspect THIS question tests has to be told apart:
+  // a characteristic question's options are drawn from real
+  // characteristics text (its own or another horizon's), which a colour
+  // question's "value/chroma" options never are.
+  const isCharacteristicQuestion = !!linkedHorizon && question.options.some(
+    (option) => linkedHorizon.characteristics.some((characteristic) => characteristic.text === option.text)
+  );
 
   return (
     <Flex
@@ -457,7 +474,8 @@ function QuestionStep({
     >
       <SoilProfileReference
         monolith={monolith}
-        hideColourForHorizonId={revealed ? null : question.horizonId}
+        hideColourForHorizonId={!revealed && !isCharacteristicQuestion ? question.horizonId : null}
+        hideCharacteristicsForHorizonId={!revealed && isCharacteristicQuestion ? question.horizonId : null}
       />
 
       <Stack
@@ -484,7 +502,7 @@ function QuestionStep({
           </Paper>
         </Flex>
 
-        {linkedHorizon && (
+        {linkedHorizon && !isCharacteristicQuestion && (
           <Paper
             radius="lg"
             p="md"

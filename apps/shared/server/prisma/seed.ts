@@ -166,13 +166,78 @@ function horizonColourQuestions(horizons: HorizonSeed[]): (Omit<QuestionSeed, 'o
   }));
 }
 
+const CHARACTERISTIC_DISTRACTOR_COUNT = 3;
+
+// One DIAGNOSTIC_HORIZONS single-select question per horizon: "which of
+// these is a characteristic of this horizon?" The correct option is the
+// horizon's own first listed characteristic; distractors are real
+// characteristics of OTHER horizons — never invented text. Preference order
+// for where distractors come from: other horizons in the same monolith
+// first (keeps the contrast meaningful), falling back to horizons in other
+// monoliths (via `allHorizons`) when a monolith's own horizons don't supply
+// enough distinct options — Hutton only has 2 horizons, so that fallback is
+// expected to trigger there.
+//
+// A candidate is excluded if it's already been picked, OR if it also
+// appears in the TARGET horizon's own characteristics list — even when
+// sourced from a different horizon/monolith, reusing that exact text as a
+// "wrong" answer would be factually incorrect if it's also genuinely true
+// of the horizon being asked about.
+function horizonCharacteristicQuestions(
+  monolithHorizons: HorizonSeed[],
+  allHorizons: HorizonSeed[]
+): (Omit<QuestionSeed, 'orderIndex'> & { horizonLabel: string; })[] {
+  return monolithHorizons.map((targetHorizon, index) => {
+    const correctText = targetHorizon.characteristics[0];
+    const distractorTexts: string[] = [];
+    const isUsable = (text: string) => !targetHorizon.characteristics.includes(text) && !distractorTexts.includes(text);
+
+    const sameMonolithPool = monolithHorizons
+      .filter((horizon) => horizon !== targetHorizon)
+      .flatMap((horizon) => horizon.characteristics);
+    for (const text of sameMonolithPool) {
+      if (distractorTexts.length >= CHARACTERISTIC_DISTRACTOR_COUNT) break;
+      if (isUsable(text)) distractorTexts.push(text);
+    }
+
+    if (distractorTexts.length < CHARACTERISTIC_DISTRACTOR_COUNT) {
+      const otherMonolithPool = allHorizons
+        .filter((horizon) => !monolithHorizons.includes(horizon))
+        .flatMap((horizon) => horizon.characteristics);
+      for (const text of otherMonolithPool) {
+        if (distractorTexts.length >= CHARACTERISTIC_DISTRACTOR_COUNT) break;
+        if (isUsable(text)) distractorTexts.push(text);
+      }
+    }
+
+    const points = [
+      {
+        text: correctText, isCorrect: true
+      },
+      ...distractorTexts.map((text) => ({
+        text, isCorrect: false
+      }))
+    ];
+    const offset = index % points.length;
+    const rotated = [...points.slice(offset), ...points.slice(0, offset)];
+
+    return {
+      category: QuestionCategory.DIAGNOSTIC_HORIZONS,
+      prompt: `Which of these is a characteristic of ${targetHorizon.label}?`,
+      horizonLabel: targetHorizon.label,
+      options: rotated
+    };
+  });
+}
+
 // Assembles a monolith's full question list in a fixed category order and
 // assigns sequential orderIndex across all of them afterward, so orderIndex
 // never has to be hand-kept in sync with however many family-code digit or
-// horizon-colour questions a monolith ends up with.
+// horizon-colour/characteristic questions a monolith ends up with.
 function buildQuestions(
   diagnosticHorizons: Omit<QuestionSeed, 'orderIndex' | 'category'>,
   horizonColourQuestionSeeds: Omit<QuestionSeed, 'orderIndex'>[],
+  horizonCharacteristicQuestionSeeds: Omit<QuestionSeed, 'orderIndex'>[],
   soilForm: Omit<QuestionSeed, 'orderIndex' | 'category'>,
   soilFamilyFields: SoilFamilyFieldSeed[],
   landscapePosition: Omit<QuestionSeed, 'orderIndex' | 'category'>,
@@ -183,6 +248,7 @@ function buildQuestions(
       category: QuestionCategory.DIAGNOSTIC_HORIZONS, ...diagnosticHorizons
     },
     ...horizonColourQuestionSeeds,
+    ...horizonCharacteristicQuestionSeeds,
     {
       category: QuestionCategory.SOIL_FORM, ...soilForm
     },
@@ -340,6 +406,10 @@ const rensburgHorizons: HorizonSeed[] = [
   }
 ];
 
+// Fallback distractor pool for horizonCharacteristicQuestions when a
+// monolith's own horizons don't offer enough distinct characteristics.
+const allHorizons: HorizonSeed[] = [...huttonHorizons, ...avalonHorizons, ...rensburgHorizons];
+
 const monoliths: MonolithSeed[] = [
   {
     name: 'Hutton',
@@ -363,6 +433,7 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       horizonColourQuestions(huttonHorizons),
+      horizonCharacteristicQuestions(huttonHorizons, allHorizons),
       {
         prompt: 'Which soil form is represented by this profile?',
         options: [
@@ -443,6 +514,7 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       horizonColourQuestions(avalonHorizons),
+      horizonCharacteristicQuestions(avalonHorizons, allHorizons),
       {
         prompt: 'Which soil form is represented by this profile?',
         options: [
@@ -523,6 +595,7 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       [], // no colour questions for Rensburg — see rensburgHorizons above
+      horizonCharacteristicQuestions(rensburgHorizons, allHorizons),
       {
         prompt: 'Which soil form is represented by this profile?',
         options: [
