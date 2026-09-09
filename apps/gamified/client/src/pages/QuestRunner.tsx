@@ -713,6 +713,22 @@ function QuestRunnerInner({
   const question = isComplete ? undefined : questions[stepIndex];
   const isReview = mode === 'review';
 
+  // Soil Family Code is graded one digit at a time, so several consecutive
+  // steps now share a category label ("Day X: Soil Family Code") with only
+  // the prompt distinguishing them — this makes that position explicit.
+  // Generic over any category having more than one question, not just this
+  // one, so it doesn't need updating if another category is ever split up
+  // the same way.
+  const sameCategoryQuestions = question ? questions.filter((q) => q.category === question.category) : [];
+  const sameCategoryPosition = question
+    ? sameCategoryQuestions.findIndex((q) => q.id === question.id) + 1
+    : 0;
+  const categoryHeading = question
+    ? categoryLabels[question.category] + (sameCategoryQuestions.length > 1
+      ? ` (${sameCategoryPosition} of ${sameCategoryQuestions.length})`
+      : '')
+    : '';
+
   // Only ever consulted in review mode. In play mode a previous answer must
   // stay invisible — pre-filling it here is exactly what makes a retry feel
   // like a continuation instead of a fresh attempt.
@@ -843,7 +859,7 @@ function QuestRunnerInner({
             fw={700}
             c="charcoal.8"
           >
-            {isComplete ? 'Day Complete' : `Day ${stepIndex + 1}: ${categoryLabels[question!.category]}`}
+            {isComplete ? 'Day Complete' : `Day ${stepIndex + 1}: ${categoryHeading}`}
             {isReview && ' — Review'}
           </Text>
         </Group>

@@ -96,12 +96,55 @@ const achievements: AchievementSeed[] = [
   }
 ];
 
-// The three Soil Family Codes always appear together as the MCQ options for
-// every chapter's SOIL_FAMILY_CODE question — only which one is correct changes.
-const SOIL_FAMILY_CODES = ['1210', '2130', '0220'];
-function soilFamilyCodeOptions(correctCode: string): { text: string; isCorrect: boolean; }[] {
-  return SOIL_FAMILY_CODES.map((code) => ({
-    text: code, isCorrect: code === correctCode
+// Students build a Soil Family Code one digit at a time by dragging the
+// correct number (0-4) into place — see the "Step 1/Step 2" tables in
+// Gamified_App_Questions___Answers.docx / Plain_App_questions___answers.docx
+// — so each digit position is its own graded question rather than one
+// whole-code multiple-choice question.
+const DIGIT_OPTIONS = ['0', '1', '2', '3', '4'];
+
+// Generated directly from a monolith's own SoilFamilyField list (label +
+// correctValue), never hand-typed, so the digit questions can't drift from
+// the family-code data seeded alongside them — same fields array is passed
+// to both.
+function soilFamilyDigitQuestions(fields: SoilFamilyFieldSeed[]): Omit<QuestionSeed, 'orderIndex'>[] {
+  return fields.map((field) => ({
+    category: QuestionCategory.SOIL_FAMILY_CODE,
+    prompt: `What is the correct digit for ${field.label}?`,
+    options: DIGIT_OPTIONS.map((digit) => ({
+      text: digit, isCorrect: digit === field.correctValue
+    }))
+  }));
+}
+
+// Assembles a monolith's full question list in a fixed category order and
+// assigns sequential orderIndex across all of them afterward, so orderIndex
+// never has to be hand-kept in sync with however many family-code digit
+// questions a monolith ends up with.
+function buildQuestions(
+  diagnosticHorizons: Omit<QuestionSeed, 'orderIndex' | 'category'>,
+  soilForm: Omit<QuestionSeed, 'orderIndex' | 'category'>,
+  soilFamilyFields: SoilFamilyFieldSeed[],
+  landscapePosition: Omit<QuestionSeed, 'orderIndex' | 'category'>,
+  suitability: Omit<QuestionSeed, 'orderIndex' | 'category'>
+): QuestionSeed[] {
+  const unordered: Omit<QuestionSeed, 'orderIndex'>[] = [
+    {
+      category: QuestionCategory.DIAGNOSTIC_HORIZONS, ...diagnosticHorizons
+    },
+    {
+      category: QuestionCategory.SOIL_FORM, ...soilForm
+    },
+    ...soilFamilyDigitQuestions(soilFamilyFields),
+    {
+      category: QuestionCategory.LANDSCAPE_POSITION, ...landscapePosition
+    },
+    {
+      category: QuestionCategory.SUITABILITY, ...suitability
+    }
+  ];
+  return unordered.map((question, index) => ({
+    ...question, orderIndex: index + 1
   }));
 }
 
@@ -121,6 +164,54 @@ interface MonolithSeed {
   // soilFamilyCode, numbered to match the plain app's chapter order above.
   level: LevelSeed;
 }
+
+// Declared once per monolith and reused for both the SoilFamilyCode.fields
+// seed data and the generated digit questions below, so there's exactly one
+// place each farm's field labels/values are written.
+const huttonFamilyFields: SoilFamilyFieldSeed[] = [
+  {
+    label: 'Topsoil colour', correctValue: '1'
+  },
+  {
+    label: 'Base status', correctValue: '2'
+  },
+  {
+    label: 'Textural contrast', correctValue: '1'
+  },
+  {
+    label: 'Final family digit', correctValue: '0'
+  }
+];
+
+const avalonFamilyFields: SoilFamilyFieldSeed[] = [
+  {
+    label: 'Topsoil colour', correctValue: '2'
+  },
+  {
+    label: 'Base status', correctValue: '1'
+  },
+  {
+    label: 'Texture', correctValue: '3'
+  },
+  {
+    label: 'Final family digit', correctValue: '0'
+  }
+];
+
+const rensburgFamilyFields: SoilFamilyFieldSeed[] = [
+  {
+    label: 'Topsoil colour', correctValue: '0'
+  },
+  {
+    label: 'Base status', correctValue: '2'
+  },
+  {
+    label: 'Texture', correctValue: '2'
+  },
+  {
+    label: 'Final family digit', correctValue: '0'
+  }
+];
 
 const monoliths: MonolithSeed[] = [
   {
@@ -148,10 +239,8 @@ const monoliths: MonolithSeed[] = [
         characteristics: ['Apedal', 'Massive appearance', 'Deep profile']
       }
     ],
-    questions: [
+    questions: buildQuestions(
       {
-        category: QuestionCategory.DIAGNOSTIC_HORIZONS,
-        orderIndex: 1,
         prompt: 'Which diagnostic horizons are present in this soil profile?',
         options: [
           {
@@ -166,8 +255,6 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       {
-        category: QuestionCategory.SOIL_FORM,
-        orderIndex: 2,
         prompt: 'Which soil form is represented by this profile?',
         options: [
           {
@@ -181,15 +268,8 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       },
+      huttonFamilyFields,
       {
-        category: QuestionCategory.SOIL_FAMILY_CODE,
-        orderIndex: 3,
-        prompt: 'What is the correct Soil Family Code for this Hutton soil?',
-        options: soilFamilyCodeOptions('1210')
-      },
-      {
-        category: QuestionCategory.LANDSCAPE_POSITION,
-        orderIndex: 4,
         prompt: 'Where would this soil most likely occur in the landscape?',
         options: [
           {
@@ -204,8 +284,6 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       {
-        category: QuestionCategory.SUITABILITY,
-        orderIndex: 5,
         prompt: 'How suitable is this soil for maize production?',
         options: [
           {
@@ -219,24 +297,11 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       }
-    ],
+    ),
     soilFamilyCode: {
       finalCode: '1210',
       soilFamilyName: 'Hutton',
-      fields: [
-        {
-          label: 'Topsoil colour', correctValue: '1' 
-        },
-        {
-          label: 'Base status', correctValue: '2' 
-        },
-        {
-          label: 'Textural contrast', correctValue: '1' 
-        },
-        {
-          label: 'Final family digit', correctValue: '0'
-        }
-      ]
+      fields: huttonFamilyFields
     },
     level: {
       levelNumber: 1,
@@ -281,10 +346,8 @@ const monoliths: MonolithSeed[] = [
         characteristics: ['Soft plinthic horizon', 'Rocky texture', 'Signs of seasonal wetness']
       }
     ],
-    questions: [
+    questions: buildQuestions(
       {
-        category: QuestionCategory.DIAGNOSTIC_HORIZONS,
-        orderIndex: 1,
         prompt: 'Which diagnostic horizons are present in this soil profile?',
         options: [
           {
@@ -299,8 +362,6 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       {
-        category: QuestionCategory.SOIL_FORM,
-        orderIndex: 2,
         prompt: 'Which soil form is represented by this profile?',
         options: [
           {
@@ -314,15 +375,8 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       },
+      avalonFamilyFields,
       {
-        category: QuestionCategory.SOIL_FAMILY_CODE,
-        orderIndex: 3,
-        prompt: 'What is the correct Soil Family Code for this Avalon soil?',
-        options: soilFamilyCodeOptions('2130')
-      },
-      {
-        category: QuestionCategory.LANDSCAPE_POSITION,
-        orderIndex: 4,
         prompt: 'Where would this soil most likely occur in the landscape?',
         options: [
           {
@@ -337,8 +391,6 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       {
-        category: QuestionCategory.SUITABILITY,
-        orderIndex: 5,
         prompt: 'How suitable is this soil for soybean production?',
         options: [
           {
@@ -352,24 +404,11 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       }
-    ],
+    ),
     soilFamilyCode: {
       finalCode: '2130',
       soilFamilyName: 'Avalon',
-      fields: [
-        {
-          label: 'Topsoil colour', correctValue: '2' 
-        },
-        {
-          label: 'Base status', correctValue: '1' 
-        },
-        {
-          label: 'Texture', correctValue: '3' 
-        },
-        {
-          label: 'Final family digit', correctValue: '0'
-        }
-      ]
+      fields: avalonFamilyFields
     },
     level: {
       levelNumber: 2,
@@ -405,10 +444,8 @@ const monoliths: MonolithSeed[] = [
         characteristics: ['Gleyed appearance', 'Massive clay structure', 'Poorly drained']
       }
     ],
-    questions: [
+    questions: buildQuestions(
       {
-        category: QuestionCategory.DIAGNOSTIC_HORIZONS,
-        orderIndex: 1,
         prompt: 'Which diagnostic horizons are present in this soil profile?',
         options: [
           {
@@ -423,8 +460,6 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       {
-        category: QuestionCategory.SOIL_FORM,
-        orderIndex: 2,
         prompt: 'Which soil form is represented by this profile?',
         options: [
           {
@@ -438,15 +473,8 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       },
+      rensburgFamilyFields,
       {
-        category: QuestionCategory.SOIL_FAMILY_CODE,
-        orderIndex: 3,
-        prompt: 'What is the correct Soil Family Code for this Rensburg soil?',
-        options: soilFamilyCodeOptions('0220')
-      },
-      {
-        category: QuestionCategory.LANDSCAPE_POSITION,
-        orderIndex: 4,
         prompt: 'Where would this soil most likely occur in the landscape?',
         options: [
           {
@@ -461,8 +489,6 @@ const monoliths: MonolithSeed[] = [
         ]
       },
       {
-        category: QuestionCategory.SUITABILITY,
-        orderIndex: 5,
         prompt: 'How suitable is this soil for pasture production?',
         options: [
           {
@@ -476,24 +502,11 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       }
-    ],
+    ),
     soilFamilyCode: {
       finalCode: '0220',
       soilFamilyName: 'Rensburg',
-      fields: [
-        {
-          label: 'Topsoil colour', correctValue: '0' 
-        },
-        {
-          label: 'Base status', correctValue: '2' 
-        },
-        {
-          label: 'Texture', correctValue: '2' 
-        },
-        {
-          label: 'Final family digit', correctValue: '0'
-        }
-      ]
+      fields: rensburgFamilyFields
     },
     level: {
       levelNumber: 3,
