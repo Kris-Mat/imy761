@@ -232,6 +232,7 @@ const models: TsoaRoute.Models = {
             "orderIndex": {"dataType":"double","required":true},
             "prompt": {"dataType":"string","required":true},
             "options": {"dataType":"array","array":{"dataType":"refObject","ref":"AnswerOption"},"required":true},
+            "horizonId": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
         },
         "additionalProperties": false,
     },

@@ -15,9 +15,16 @@ interface MunsellChipProps {
   hue: string;
   value: number;
   chroma: number;
+  // False renders just the colour swatch, no text — used where the label
+  // itself (including colourText, which is enough of a hint to give away a
+  // graded colour question) would leak the answer to something still
+  // unanswered. Defaults to true so every existing call site is unaffected.
+  revealLabel?: boolean;
 }
 
-function MunsellChip({ colourText, hue, value, chroma }: MunsellChipProps) {
+function MunsellChip({
+  colourText, hue, value, chroma, revealLabel = true
+}: MunsellChipProps) {
   return (
     <Group gap="xs" wrap="nowrap">
       <div
@@ -30,7 +37,7 @@ function MunsellChip({ colourText, hue, value, chroma }: MunsellChipProps) {
           flexShrink: 0
         }}
       />
-      <Text size="sm">{colourText} ({hue} {value}/{chroma})</Text>
+      {revealLabel && <Text size="sm">{colourText} ({hue} {value}/{chroma})</Text>}
     </Group>
   );
 }

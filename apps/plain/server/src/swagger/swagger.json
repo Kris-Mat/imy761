@@ -83,14 +83,55 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"Achievement": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"title": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"earned": {
+						"type": "boolean"
+					},
+					"earnedAt": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"title",
+					"description",
+					"earned",
+					"earnedAt"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"AttemptResult": {
 				"properties": {
 					"isCorrect": {
 						"type": "boolean"
+					},
+					"leveledUp": {
+						"type": "boolean"
+					},
+					"newlyUnlockedAchievements": {
+						"items": {
+							"$ref": "#/components/schemas/Achievement"
+						},
+						"type": "array"
 					}
 				},
 				"required": [
-					"isCorrect"
+					"isCorrect",
+					"leveledUp",
+					"newlyUnlockedAchievements"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -320,6 +361,11 @@
 							"$ref": "#/components/schemas/AnswerOption"
 						},
 						"type": "array"
+					},
+					"horizonId": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
 					}
 				},
 				"required": [
@@ -327,7 +373,8 @@
 					"category",
 					"orderIndex",
 					"prompt",
-					"options"
+					"options",
+					"horizonId"
 				],
 				"type": "object",
 				"additionalProperties": false

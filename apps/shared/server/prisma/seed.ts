@@ -43,6 +43,11 @@ interface QuestionSeed {
   orderIndex: number;
   prompt: string;
   options: { text: string; isCorrect: boolean; }[];
+  // Set only for a horizon-linked colour question — resolved to a real
+  // Horizon id in main() once horizons have actually been created, since a
+  // nested Prisma write can't cross-reference a sibling nested create within
+  // the same call.
+  horizonLabel?: string;
 }
 
 interface SoilFamilyFieldSeed {
@@ -117,12 +122,57 @@ function soilFamilyDigitQuestions(fields: SoilFamilyFieldSeed[]): Omit<QuestionS
   }));
 }
 
+// Only Hutton and Avalon have a verified 7.5YR chart page for their colours
+// — Rensburg's greys are explicitly noted above as the least faithful match
+// available, so no graded colour question is generated for them (pass an
+// empty horizons array for Rensburg).
+//
+// Distractors are adjacent chips on that same chart page (±1 value or +1
+// chroma step from the real reading), not arbitrary numbers — plausible
+// near-misses a student could actually mis-read the chart as. Rotated by
+// the horizon's position in its monolith so the correct option isn't always
+// in the same slot.
+function nearbyMunsellOptions(value: number, chroma: number, rotateBy: number): { text: string; isCorrect: boolean; }[] {
+  const points = [
+    {
+      value, chroma, isCorrect: true
+    },
+    {
+      value: value + 1, chroma, isCorrect: false
+    },
+    {
+      value: value - 1, chroma, isCorrect: false
+    },
+    {
+      value, chroma: chroma + 1, isCorrect: false
+    }
+  ];
+  const offset = rotateBy % points.length;
+  const rotated = [...points.slice(offset), ...points.slice(0, offset)];
+  return rotated.map((point) => ({
+    text: `${point.value}/${point.chroma}`, isCorrect: point.isCorrect
+  }));
+}
+
+// One DIAGNOSTIC_HORIZONS question per horizon, linked via horizonLabel —
+// derived directly from that horizon's own colourValue/colourChroma, same
+// "one source of truth" pattern as soilFamilyDigitQuestions above.
+function horizonColourQuestions(horizons: HorizonSeed[]): (Omit<QuestionSeed, 'orderIndex'> & { horizonLabel: string; })[] {
+  return horizons.map((horizon, index) => ({
+    category: QuestionCategory.DIAGNOSTIC_HORIZONS,
+    prompt: `What is the correct Munsell value and chroma for ${horizon.label}'s colour?`,
+    horizonLabel: horizon.label,
+    options: nearbyMunsellOptions(horizon.colourValue, horizon.colourChroma, index)
+  }));
+}
+
 // Assembles a monolith's full question list in a fixed category order and
 // assigns sequential orderIndex across all of them afterward, so orderIndex
-// never has to be hand-kept in sync with however many family-code digit
-// questions a monolith ends up with.
+// never has to be hand-kept in sync with however many family-code digit or
+// horizon-colour questions a monolith ends up with.
 function buildQuestions(
   diagnosticHorizons: Omit<QuestionSeed, 'orderIndex' | 'category'>,
+  horizonColourQuestionSeeds: Omit<QuestionSeed, 'orderIndex'>[],
   soilForm: Omit<QuestionSeed, 'orderIndex' | 'category'>,
   soilFamilyFields: SoilFamilyFieldSeed[],
   landscapePosition: Omit<QuestionSeed, 'orderIndex' | 'category'>,
@@ -132,6 +182,7 @@ function buildQuestions(
     {
       category: QuestionCategory.DIAGNOSTIC_HORIZONS, ...diagnosticHorizons
     },
+    ...horizonColourQuestionSeeds,
     {
       category: QuestionCategory.SOIL_FORM, ...soilForm
     },
@@ -213,32 +264,89 @@ const rensburgFamilyFields: SoilFamilyFieldSeed[] = [
   }
 ];
 
+// Declared once per monolith and reused for both the Horizon seed data and
+// (Hutton/Avalon only) the generated colour questions below.
+const huttonHorizons: HorizonSeed[] = [
+  {
+    label: 'Horizon A',
+    orderIndex: 1,
+    colourText: 'Dark brown',
+    colourHue: '7.5YR',
+    colourValue: 3,
+    colourChroma: 2,
+    characteristics: ['Many roots', 'Granular structure']
+  },
+  {
+    label: 'Horizon B',
+    orderIndex: 2,
+    colourText: 'Red',
+    colourHue: '7.5YR',
+    colourValue: 4,
+    colourChroma: 6,
+    characteristics: ['Apedal', 'Massive appearance', 'Deep profile']
+  }
+];
+
+const avalonHorizons: HorizonSeed[] = [
+  {
+    label: 'Horizon A',
+    orderIndex: 1,
+    colourText: 'Brown',
+    colourHue: '7.5YR',
+    colourValue: 5,
+    colourChroma: 4,
+    characteristics: ['Many roots', 'Granular structure']
+  },
+  {
+    label: 'Horizon B',
+    orderIndex: 2,
+    colourText: 'Yellow-brown',
+    colourHue: '7.5YR',
+    colourValue: 6,
+    colourChroma: 6,
+    characteristics: ['Apedal', 'Massive appearance']
+  },
+  {
+    label: 'Horizon C',
+    orderIndex: 3,
+    colourText: 'Light yellow-brown',
+    colourHue: '7.5YR',
+    colourValue: 7,
+    colourChroma: 4,
+    characteristics: ['Soft plinthic horizon', 'Rocky texture', 'Signs of seasonal wetness']
+  }
+];
+
+// No 7.5YR-chart-verified colour questions for Rensburg — see the file
+// header comment: its greys are the least faithful match available.
+const rensburgHorizons: HorizonSeed[] = [
+  {
+    label: 'Horizon A',
+    orderIndex: 1,
+    colourText: 'Dark grey',
+    colourHue: '7.5YR',
+    colourValue: 3,
+    colourChroma: 0,
+    characteristics: ['High clay content', 'Surface cracks']
+  },
+  {
+    label: 'Horizon B',
+    orderIndex: 2,
+    colourText: 'Grey',
+    colourHue: '7.5YR',
+    colourValue: 5,
+    colourChroma: 0,
+    characteristics: ['Gleyed appearance', 'Massive clay structure', 'Poorly drained']
+  }
+];
+
 const monoliths: MonolithSeed[] = [
   {
     name: 'Hutton',
     imageUrl: '/monoliths/hutton.png',
     finalSoilForm: 'Hutton',
     orderIndex: 1,
-    horizons: [
-      {
-        label: 'Horizon A',
-        orderIndex: 1,
-        colourText: 'Dark brown',
-        colourHue: '7.5YR',
-        colourValue: 3,
-        colourChroma: 2,
-        characteristics: ['Many roots', 'Granular structure']
-      },
-      {
-        label: 'Horizon B',
-        orderIndex: 2,
-        colourText: 'Red',
-        colourHue: '7.5YR',
-        colourValue: 4,
-        colourChroma: 6,
-        characteristics: ['Apedal', 'Massive appearance', 'Deep profile']
-      }
-    ],
+    horizons: huttonHorizons,
     questions: buildQuestions(
       {
         prompt: 'Which diagnostic horizons are present in this soil profile?',
@@ -254,6 +362,7 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       },
+      horizonColourQuestions(huttonHorizons),
       {
         prompt: 'Which soil form is represented by this profile?',
         options: [
@@ -317,35 +426,7 @@ const monoliths: MonolithSeed[] = [
     imageUrl: '/monoliths/avalon.png',
     finalSoilForm: 'Avalon',
     orderIndex: 2,
-    horizons: [
-      {
-        label: 'Horizon A',
-        orderIndex: 1,
-        colourText: 'Brown',
-        colourHue: '7.5YR',
-        colourValue: 5,
-        colourChroma: 4,
-        characteristics: ['Many roots', 'Granular structure']
-      },
-      {
-        label: 'Horizon B',
-        orderIndex: 2,
-        colourText: 'Yellow-brown',
-        colourHue: '7.5YR',
-        colourValue: 6,
-        colourChroma: 6,
-        characteristics: ['Apedal', 'Massive appearance']
-      },
-      {
-        label: 'Horizon C',
-        orderIndex: 3,
-        colourText: 'Light yellow-brown',
-        colourHue: '7.5YR',
-        colourValue: 7,
-        colourChroma: 4,
-        characteristics: ['Soft plinthic horizon', 'Rocky texture', 'Signs of seasonal wetness']
-      }
-    ],
+    horizons: avalonHorizons,
     questions: buildQuestions(
       {
         prompt: 'Which diagnostic horizons are present in this soil profile?',
@@ -361,6 +442,7 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       },
+      horizonColourQuestions(avalonHorizons),
       {
         prompt: 'Which soil form is represented by this profile?',
         options: [
@@ -424,26 +506,7 @@ const monoliths: MonolithSeed[] = [
     imageUrl: '/monoliths/rensburg.png',
     finalSoilForm: 'Rensburg',
     orderIndex: 3,
-    horizons: [
-      {
-        label: 'Horizon A',
-        orderIndex: 1,
-        colourText: 'Dark grey',
-        colourHue: '7.5YR',
-        colourValue: 3,
-        colourChroma: 0,
-        characteristics: ['High clay content', 'Surface cracks']
-      },
-      {
-        label: 'Horizon B',
-        orderIndex: 2,
-        colourText: 'Grey',
-        colourHue: '7.5YR',
-        colourValue: 5,
-        colourChroma: 0,
-        characteristics: ['Gleyed appearance', 'Massive clay structure', 'Poorly drained']
-      }
-    ],
+    horizons: rensburgHorizons,
     questions: buildQuestions(
       {
         prompt: 'Which diagnostic horizons are present in this soil profile?',
@@ -459,6 +522,7 @@ const monoliths: MonolithSeed[] = [
           }
         ]
       },
+      [], // no colour questions for Rensburg — see rensburgHorizons above
       {
         prompt: 'Which soil form is represented by this profile?',
         options: [
@@ -563,8 +627,15 @@ async function main(): Promise<void> {
   await prisma.monolith.deleteMany();
 
   for (const monolith of monoliths) {
+    // Horizons and soilFamilyCode are still nested creates, but questions
+    // are created afterward in a separate loop — a horizon-linked question's
+    // horizonId needs the real id Prisma assigns the horizon it references,
+    // which isn't available yet while horizons and questions are still
+    // sibling nested creates under the same monolith.create() call.
     const createdMonolith = await prisma.monolith.create({
-      include: { soilFamilyCode: true },
+      include: {
+        horizons: true, soilFamilyCode: true
+      },
       data: {
         name: monolith.name,
         imageUrl: monolith.imageUrl,
@@ -585,18 +656,6 @@ async function main(): Promise<void> {
             }
           }))
         },
-        questions: {
-          create: monolith.questions.map((question) => ({
-            category: question.category,
-            orderIndex: question.orderIndex,
-            prompt: question.prompt,
-            options: {
-              create: question.options.map((option, index) => ({
-                text: option.text, isCorrect: option.isCorrect, orderIndex: index + 1
-              }))
-            }
-          }))
-        },
         soilFamilyCode: {
           create: {
             finalCode: monolith.soilFamilyCode.finalCode,
@@ -610,6 +669,25 @@ async function main(): Promise<void> {
         }
       }
     });
+
+    const horizonIdByLabel = new Map(createdMonolith.horizons.map((horizon) => [horizon.label, horizon.id]));
+
+    for (const question of monolith.questions) {
+      await prisma.question.create({
+        data: {
+          category: question.category,
+          orderIndex: question.orderIndex,
+          prompt: question.prompt,
+          monolithId: createdMonolith.id,
+          horizonId: question.horizonLabel ? horizonIdByLabel.get(question.horizonLabel) : undefined,
+          options: {
+            create: question.options.map((option, index) => ({
+              text: option.text, isCorrect: option.isCorrect, orderIndex: index + 1
+            }))
+          }
+        }
+      });
+    }
 
     await prisma.level.create({
       data: {

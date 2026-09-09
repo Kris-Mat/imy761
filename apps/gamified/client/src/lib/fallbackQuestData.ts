@@ -103,6 +103,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'DIAGNOSTIC_HORIZONS',
         orderIndex: 0,
         prompt: 'Which horizon shows the highest organic matter content?',
+        horizonId: null,
         options: [
           {
             id: -12011, text: 'Topsoil', isCorrect: true, orderIndex: 0
@@ -117,6 +118,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'SUITABILITY',
         orderIndex: 1,
         prompt: 'Given the well-drained subsoil, is this profile suitable for deep-rooted crops?',
+        horizonId: null,
         options: [
           {
             id: -12021, text: 'Yes, drainage is not limiting', isCorrect: true, orderIndex: 0
@@ -167,6 +169,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'SOIL_FORM',
         orderIndex: 0,
         prompt: 'What does mottling in the subsoil most likely indicate?',
+        horizonId: null,
         options: [
           {
             id: -13011, text: 'Periodic waterlogging', isCorrect: true, orderIndex: 0
@@ -181,6 +184,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'LANDSCAPE_POSITION',
         orderIndex: 1,
         prompt: 'A mottled subsoil like this is most typical of which landscape position?',
+        horizonId: null,
         options: [
           {
             id: -13021, text: 'Valley bottom / footslope', isCorrect: true, orderIndex: 0
@@ -231,6 +235,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'DIAGNOSTIC_HORIZONS',
         orderIndex: 0,
         prompt: 'What limits root depth in this profile?',
+        horizonId: null,
         options: [
           {
             id: -14011, text: 'Shallow hard rock', isCorrect: true, orderIndex: 0
@@ -245,6 +250,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'SUITABILITY',
         orderIndex: 1,
         prompt: 'Is this profile suitable for deep-rooted orchard crops?',
+        horizonId: null,
         options: [
           {
             id: -14021, text: 'No, effective depth is too shallow', isCorrect: true, orderIndex: 0

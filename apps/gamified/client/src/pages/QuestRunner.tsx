@@ -153,7 +153,7 @@ function horizonBand(index: number, count: number) {
   };
 }
 
-function HorizonDetails({ horizon }: { horizon: Horizon; }) {
+function HorizonDetails({ horizon, revealLabel = true }: { horizon: Horizon; revealLabel?: boolean; }) {
   return (
     <Stack gap="xs">
       <Title order={4}>{horizon.label}</Title>
@@ -162,6 +162,7 @@ function HorizonDetails({ horizon }: { horizon: Horizon; }) {
         hue={horizon.colourHue}
         value={horizon.colourValue}
         chroma={horizon.colourChroma}
+        revealLabel={revealLabel}
       />
       {horizon.characteristics.map((characteristic) => (
         <Text
@@ -178,7 +179,13 @@ function HorizonDetails({ horizon }: { horizon: Horizon; }) {
 // The same profile the explore step shows, kept beside the questions so the
 // horizon details stay reachable without leaving the question — hover only, so
 // it can't be mistaken for part of answering.
-function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
+function SoilProfileReference({ monolith, hideColourForHorizonId }: {
+  monolith: Monolith;
+  // The linked horizon of the current question, while it's still
+  // unanswered — its colour label is suppressed here so hovering it doesn't
+  // hand over the answer. Every other horizon is unaffected.
+  hideColourForHorizonId?: number | null;
+}) {
   return (
     <Stack
       gap={4}
@@ -223,7 +230,10 @@ function SoilProfileReference({ monolith }: { monolith: Monolith; }) {
                 />
               </HoverCard.Target>
               <HoverCard.Dropdown>
-                <HorizonDetails horizon={horizon} />
+                <HorizonDetails
+                  horizon={horizon}
+                  revealLabel={horizon.id !== hideColourForHorizonId}
+                />
               </HoverCard.Dropdown>
             </HoverCard>
           );
@@ -432,6 +442,12 @@ interface QuestionStepProps {
 function QuestionStep({
   monolith, question, selectedOptionId, onSelect, revealed, error, unanswered
 }: QuestionStepProps) {
+  // Only set for the new horizon-colour questions (Question.horizonId) —
+  // undefined for every other question type.
+  const linkedHorizon = question.horizonId != null
+    ? monolith.horizons.find((horizon) => horizon.id === question.horizonId)
+    : undefined;
+
   return (
     <Flex
       gap="xl"
@@ -439,12 +455,15 @@ function QuestionStep({
       wrap="wrap"
       justify="center"
     >
-      <SoilProfileReference monolith={monolith} />
+      <SoilProfileReference
+        monolith={monolith}
+        hideColourForHorizonId={revealed ? null : question.horizonId}
+      />
 
       <Stack
         gap="lg"
         style={{
-          flex: 1, minWidth: 280 
+          flex: 1, minWidth: 280
         }}
         maw={520}
       >
@@ -458,12 +477,37 @@ function QuestionStep({
             p="lg"
             bg="terracotta.0"
             style={{
-              border: '1px solid var(--mantine-color-terracotta-1)', flex: 1 
+              border: '1px solid var(--mantine-color-terracotta-1)', flex: 1
             }}
           >
             <Text c="charcoal.8">{question.prompt}</Text>
           </Paper>
         </Flex>
+
+        {linkedHorizon && (
+          <Paper
+            radius="lg"
+            p="md"
+            withBorder
+          >
+            <Stack gap={6}>
+              <Text
+                fz="xs"
+                fw={600}
+                c="charcoal.6"
+              >
+                This horizon&rsquo;s colour
+              </Text>
+              <MunsellChip
+                colourText={linkedHorizon.colourText}
+                hue={linkedHorizon.colourHue}
+                value={linkedHorizon.colourValue}
+                chroma={linkedHorizon.colourChroma}
+                revealLabel={revealed}
+              />
+            </Stack>
+          </Paper>
+        )}
 
         <Radio.Group
           value={selectedOptionId}

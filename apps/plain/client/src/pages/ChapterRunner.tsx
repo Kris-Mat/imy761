@@ -23,7 +23,14 @@ function buildSteps(monolith: Monolith): Step[] {
   ];
 }
 
-function MonolithStepView({ monolith }: { monolith: Monolith; }) {
+function MonolithStepView({ monolith, revealedQuestionIds }: {
+  monolith: Monolith;
+  // Question ids the user has actually revealed (submitted) this chapter
+  // visit — used to keep this overview panel from handing over the answer
+  // to a still-unanswered horizon-colour question via "Previous" (see
+  // ChapterRunnerInner, which never resets this across navigation).
+  revealedQuestionIds: Set<number>;
+}) {
   const [activeHorizonId, setActiveHorizonId] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +46,13 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
 
   const activeHorizon: Horizon | undefined = monolith.horizons.find((h) => h.id === activeHorizonId);
   const bandHeight = 100 / monolith.horizons.length;
+
+  // Undefined for a horizon with no linked colour question at all (e.g.
+  // Rensburg's), in which case there's nothing to hide.
+  const linkedColourQuestion = activeHorizon
+    ? monolith.questions.find((question) => question.horizonId === activeHorizon.id)
+    : undefined;
+  const revealActiveHorizonColour = !linkedColourQuestion || revealedQuestionIds.has(linkedColourQuestion.id);
 
   return (
     <Stack align="center" gap="lg">
@@ -97,6 +111,7 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
                 hue={activeHorizon.colourHue}
                 value={activeHorizon.colourValue}
                 chroma={activeHorizon.colourChroma}
+                revealLabel={revealActiveHorizonColour}
               />
               {activeHorizon.characteristics.map((characteristic) => (
                 <Text
@@ -115,22 +130,53 @@ function MonolithStepView({ monolith }: { monolith: Monolith; }) {
 }
 
 interface QuestionStepViewProps {
+  monolith: Monolith;
   question: Question;
   selectedOptionId: string | null;
   onSelect: (value: string) => void;
   revealed: boolean;
+  // Whether this exact question has been revealed at any point during this
+  // chapter visit — unlike `revealed`, this doesn't reset when navigating
+  // away and back via Previous/Next, so the swatch doesn't hide an answer
+  // the user already saw.
+  everRevealed: boolean;
   error: string | null;
 }
 
 function QuestionStepView({
-  question, selectedOptionId, onSelect, revealed, error
+  monolith, question, selectedOptionId, onSelect, revealed, everRevealed, error
 }: QuestionStepViewProps) {
   const selectedOption = question.options.find((option) => String(option.id) === selectedOptionId);
   const correctOption = question.options.find((option) => option.isCorrect);
+  // Only set for the horizon-colour questions (Question.horizonId) — a
+  // swatch to actually read, with its label held back until answered.
+  const linkedHorizon = question.horizonId != null
+    ? monolith.horizons.find((horizon) => horizon.id === question.horizonId)
+    : undefined;
 
   return (
     <Stack gap="md">
       <Text fw={600}>{question.prompt}</Text>
+      {linkedHorizon && (
+        <SectionCard p="md">
+          <Stack gap={6}>
+            <Text
+              fz="xs"
+              fw={600}
+              c="charcoal.6"
+            >
+              This horizon&rsquo;s colour
+            </Text>
+            <MunsellChip
+              colourText={linkedHorizon.colourText}
+              hue={linkedHorizon.colourHue}
+              value={linkedHorizon.colourValue}
+              chroma={linkedHorizon.colourChroma}
+              revealLabel={revealed || everRevealed}
+            />
+          </Stack>
+        </SectionCard>
+      )}
       <Radio.Group
         value={selectedOptionId}
         onChange={onSelect}
@@ -181,6 +227,11 @@ function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: Chapte
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Accumulates across the whole chapter visit (never reset by goToStep, only
+  // by this component remounting for a different chapter) — see
+  // MonolithStepView, which needs to know this even when the user has
+  // navigated away from the question step itself via Previous/Next.
+  const [revealedQuestionIds, setRevealedQuestionIds] = useState<Set<number>>(new Set());
 
   const step = steps[stepIndex];
   const isLastStep = stepIndex === steps.length - 1;
@@ -221,6 +272,7 @@ function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: Chapte
       if (!session) throw new Error('Not authenticated');
       await userApi.submitAttempt(session.access_token, step.question.id, Number(selectedOptionId), questionShownAt);
       setRevealed(true);
+      setRevealedQuestionIds((prev) => new Set(prev).add(step.question.id));
     } catch (submitError) {
       console.error('Failed to submit attempt', submitError);
       setError('Failed to submit your answer. Please try again.');
@@ -260,9 +312,15 @@ function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: Chapte
           Chapter {monolith.orderIndex}
         </Title>
 
-        {step.kind === 'monolith' && <MonolithStepView monolith={monolith} />}
+        {step.kind === 'monolith' && (
+          <MonolithStepView
+            monolith={monolith}
+            revealedQuestionIds={revealedQuestionIds}
+          />
+        )}
         {step.kind === 'question' && (
           <QuestionStepView
+            monolith={monolith}
             question={step.question}
             selectedOptionId={selectedOptionId}
             onSelect={(value) => {
@@ -270,6 +328,7 @@ function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: Chapte
               setError(null);
             }}
             revealed={revealed}
+            everRevealed={revealedQuestionIds.has(step.question.id)}
             error={error}
           />
         )}

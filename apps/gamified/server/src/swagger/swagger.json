@@ -551,6 +551,11 @@
 							"$ref": "#/components/schemas/AnswerOption"
 						},
 						"type": "array"
+					},
+					"horizonId": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
 					}
 				},
 				"required": [
@@ -558,7 +563,8 @@
 					"category",
 					"orderIndex",
 					"prompt",
-					"options"
+					"options",
+					"horizonId"
 				],
 				"type": "object",
 				"additionalProperties": false

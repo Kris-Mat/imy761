@@ -49,10 +49,24 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "Achievement": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"double","required":true},
+            "title": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+            "earned": {"dataType":"boolean","required":true},
+            "earnedAt": {"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "AttemptResult": {
         "dataType": "refObject",
         "properties": {
             "isCorrect": {"dataType":"boolean","required":true},
+            "leveledUp": {"dataType":"boolean","required":true},
+            "newlyUnlockedAchievements": {"dataType":"array","array":{"dataType":"refObject","ref":"Achievement"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -143,6 +157,7 @@ const models: TsoaRoute.Models = {
             "orderIndex": {"dataType":"double","required":true},
             "prompt": {"dataType":"string","required":true},
             "options": {"dataType":"array","array":{"dataType":"refObject","ref":"AnswerOption"},"required":true},
+            "horizonId": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
         },
         "additionalProperties": false,
     },
