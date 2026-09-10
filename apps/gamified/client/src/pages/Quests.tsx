@@ -10,12 +10,22 @@ import type { Monolith } from '@shared/api/models/monolith.model';
 import { useUser } from '../context/UserContext';
 import { useMonoliths } from '../hooks/useMonoliths';
 import {
-  buildQuestDays, questTargetUrl, type DayStatus, type PipStatus, type QuestDay, type QuestDayPart
+  buildQuestDays, questTargetUrl, type DayStatus, type PipStatus, type QuestDay, type QuestDayPart, type QuestTarget
 } from '../lib/questDays';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
-import StaticMountainScene from '../components/StaticMountainScene';
+import QuestScene from '../components/QuestScene';
+import {
+  FARM_STATIONS, NEUTRAL_CAMERA, type CameraTarget, type FarmFlagState
+} from '../lib/questScene';
+
+// How far the camera pushes in on a selected farm's station — 1 is neutral.
+const SELECTED_ZOOM = 1.8;
+// Shorter than the camera's own ~1.1s transition (see lib/questScene.ts's
+// CAMERA_TRANSITION) — the foreground content swap finishes well before the
+// background settles, matching the mockup's layered-timing intent.
+const CONTENT_FADE_MS = 300;
 
 // Keyed by orderIndex (levelNumber), matching the convention in FarmRoad.tsx
 // and FarmerProgressGrid.tsx.
@@ -304,16 +314,67 @@ function PartRow({ dayTitle, part, index, farmId }: {
   );
 }
 
+// DayDetailPanel's own CTA — one label per day type/state, including
+// "Review Answers", which is deliberately a per-day/per-part action (it
+// also appears on PartRow below) and never shows up on the season-level
+// button below.
+function dayCtaLabel(day: QuestDay): string {
+  if (!day.target) return 'Not Yet Available';
+  if (day.key === 'explore') return 'Study the Profile';
+  if (day.key === 'summary') return 'View Harvest Score';
+  if (day.target.mode === 'review') return 'Review Answers';
+  return day.status === 'active' ? 'Resume Day' : 'Start Day';
+}
+
+// FarmOverview's header shortcut button — deliberately only ever one of
+// these three words, regardless of which day is selected or its type
+// (explore/category/summary). "Review Answers" lives on DayDetailPanel and
+// PartRow only; this button's job is just "get me back into the quest".
+function seasonCtaLabel(day: QuestDay): string {
+  if (day.status === 'done') return 'Retry Quest';
+  if (day.status === 'active') return 'Resume Quest';
+  return 'Start Quest';
+}
+
+// A finished day's own `target` points at its review link (that's what
+// DayDetailPanel's "Review Answers" button uses), and an active-but-fully-
+// attempted day (every question answered, some wrong) also carries a
+// review-mode target for the same reason — buildQuestDays only distinguishes
+// "not everything's been attempted yet" from "it has", not "and was it all
+// correct". Neither belongs on this button: "Retry Quest" must replay from
+// the top, and "Resume Quest" must land on the first still-wrong question in
+// play mode, not silently open a review screen.
+function seasonCtaTarget(day: QuestDay): QuestTarget | null {
+  if (!day.target) return null;
+  // The synthetic "explore" day's own target always carries `phase:
+  // 'explore'`, which QuestRunner treats as a read-only profile visit (its
+  // `linkedToProfile` check) and ends with "Back to Quests" instead of
+  // "Continue" — correct for that day's own "Study the Profile" button, but
+  // this header button's whole job is to start/resume/retry the actual
+  // quest, so it must go in through the normal intro walkthrough instead
+  // (same stepIndex, no phase param).
+  if (day.key === 'explore') {
+    return {
+      stepIndex: 0, mode: 'play'
+    };
+  }
+  if (day.status === 'done') {
+    return {
+      ...day.target, mode: 'play'
+    };
+  }
+  if (day.status === 'active' && day.target.mode === 'review') {
+    const firstIncorrect = day.parts.find((part) => part.status === 'incorrect');
+    const target = firstIncorrect?.target ?? day.target;
+    return {
+      ...target, mode: 'play'
+    };
+  }
+  return day.target;
+}
+
 function DayDetailPanel({ day, dayNumber, farmId }: { day: QuestDay; dayNumber: number; farmId: number; }) {
   const navigate = useNavigate();
-
-  function ctaLabel(): string {
-    if (!day.target) return 'Not Yet Available';
-    if (day.key === 'explore') return 'Study the Profile';
-    if (day.key === 'summary') return 'View Harvest Score';
-    if (day.target.mode === 'review') return 'Review Answers';
-    return day.status === 'active' ? 'Resume Day' : 'Start Day';
-  }
 
   return (
     <Paper
@@ -366,7 +427,7 @@ function DayDetailPanel({ day, dayNumber, farmId }: { day: QuestDay; dayNumber: 
           disabled={!day.target}
           onClick={() => day.target && navigate(questTargetUrl(farmId, day.target))}
         >
-          {ctaLabel()}
+          {dayCtaLabel(day)}
         </Button>
       </Group>
 
@@ -395,6 +456,7 @@ function FarmOverview({ farm, monolith, onBack }: {
   monolith: Monolith;
   onBack: () => void;
 }) {
+  const navigate = useNavigate();
   const days = useMemo(() => buildQuestDays(monolith, farm), [monolith, farm]);
   const [selectedDayKey, setSelectedDayKey] = useState<string>(
     () => days.find((day) => day.status === 'ready' || day.status === 'active')?.key ?? days[0].key
@@ -534,37 +596,56 @@ function FarmOverview({ farm, monolith, onBack }: {
           }}
           gap="md"
         >
-          <Stack gap={4}>
-            <Group
-              gap={12}
-              align="baseline"
-            >
-              <Title
-                order={2}
-                c="charcoal.9"
-                fz={40}
-                fw={800}
-                style={{ lineHeight: 1.05 }}
+          <Group
+            justify="space-between"
+            align="flex-start"
+            wrap="wrap"
+            gap="md"
+          >
+            <Stack gap={4}>
+              <Group
+                gap={12}
+                align="baseline"
               >
-                The Season
-              </Title>
+                <Title
+                  order={2}
+                  c="charcoal.9"
+                  fz={40}
+                  fw={800}
+                  style={{ lineHeight: 1.05 }}
+                >
+                  The Season
+                </Title>
+                <Text
+                  fz="sm"
+                  fw={700}
+                  c="charcoal.6"
+                >
+                  {days.length - 1}
+                  {' '}
+                  days + harvest
+                </Text>
+              </Group>
               <Text
                 fz="sm"
-                fw={700}
                 c="charcoal.6"
               >
-                {days.length - 1}
-                {' '}
-                days + harvest
+                Study, answer, and review each day in any order.
               </Text>
-            </Group>
-            <Text
-              fz="sm"
-              c="charcoal.6"
+            </Stack>
+            <Button
+              color="terracotta"
+              radius="xl"
+              size="md"
+              disabled={!seasonCtaTarget(selectedDay)}
+              onClick={() => {
+                const target = seasonCtaTarget(selectedDay);
+                if (target) navigate(questTargetUrl(farm.id, target));
+              }}
             >
-              Study, answer, and review each day in any order.
-            </Text>
-          </Stack>
+              {seasonCtaLabel(selectedDay)}
+            </Button>
+          </Group>
 
           <Box
             pos="relative"
@@ -729,7 +810,17 @@ function FarmCard({ farm, onSelect }: { farm: FarmProgress; onSelect: () => void
 function Quests() {
   const { farms, loading: userLoading } = useUser();
   const { monoliths, loading: monolithsLoading } = useMonoliths();
+
+  // Two separate pieces of selection state, deliberately not one: `activeFarmId`
+  // drives the camera + flags and updates the instant a farm is (de)selected;
+  // `selectedFarmId` drives which content renders and only updates once the
+  // brief fade-out has finished. That's what makes the camera start panning
+  // immediately while the foreground content swap trails slightly behind it
+  // on its own, shorter timer — not two parallel selection state machines,
+  // just one action (`selectFarm`) fanning out to both.
+  const [activeFarmId, setActiveFarmId] = useState<number | null>(null);
   const [selectedFarmId, setSelectedFarmId] = useState<number | null>(null);
+  const [contentVisible, setContentVisible] = useState(true);
 
   const sortedFarms = useMemo(
     () => [...(farms ?? [])].sort((a, b) => a.orderIndex - b.orderIndex),
@@ -749,6 +840,38 @@ function Quests() {
     ? Math.round(sortedFarms.reduce((sum, farm) => sum + (farm.scorePercent ?? 0), 0) / sortedFarms.length)
     : 0;
 
+  // Same station index convention as FarmRoad's pins: i-th farm once sorted
+  // by orderIndex maps to FARM_STATIONS[i].
+  const activeStationIndex = activeFarmId != null
+    ? sortedFarms.findIndex((farm) => farm.id === activeFarmId)
+    : -1;
+  const station = activeStationIndex >= 0 ? FARM_STATIONS[activeStationIndex] : null;
+  const cameraTarget: CameraTarget = station
+    ? {
+      xPct: station.xPct, yPct: station.yPct, zoom: SELECTED_ZOOM
+    }
+    : NEUTRAL_CAMERA;
+  const flagStates: FarmFlagState[] = FARM_STATIONS.map((_, index) => {
+    if (activeStationIndex === -1) return 'none-selected';
+    return index === activeStationIndex ? 'selected' : 'other-selected';
+  });
+  const farmAvatars = sortedFarms.map((farm) => ({
+    src: farmerImages[farm.orderIndex], alt: farm.farmerName
+  }));
+
+  // The single action driving both the camera/flags (instant) and the
+  // content swap (fades out, swaps, fades back in) — reused for both
+  // selecting a farm and going back to the list (farmId: null resets the
+  // camera to NEUTRAL_CAMERA the same way).
+  function selectFarm(farmId: number | null) {
+    setActiveFarmId(farmId);
+    setContentVisible(false);
+    window.setTimeout(() => {
+      setSelectedFarmId(farmId);
+      setContentVisible(true);
+    }, CONTENT_FADE_MS);
+  }
+
   return (
     <Box
       px="xl"
@@ -759,18 +882,17 @@ function Quests() {
       pos="relative"
       style={{ overflow: 'hidden' }}
     >
-      <StaticMountainScene />
-      <Box
-        pos="absolute"
-        top="6%"
-        right="7%"
-        w={96}
-        h={96}
-        style={{
-          borderRadius: 999, background: 'var(--mantine-color-terracotta-2)', opacity: 0.6
-        }}
+      <QuestScene
+        cameraTarget={cameraTarget}
+        flagStates={flagStates}
+        farmAvatars={farmAvatars}
       />
-      <Box pos="relative">
+      <Box
+        pos="relative"
+        style={{
+          opacity: contentVisible ? 1 : 0, transition: `opacity ${CONTENT_FADE_MS}ms ease`
+        }}
+      >
         {loading && <Loader color="terracotta" />}
 
         {!loading && !selectedFarm && (
@@ -853,7 +975,7 @@ function Quests() {
                 <FarmCard
                   key={farm.id}
                   farm={farm}
-                  onSelect={() => setSelectedFarmId(farm.id)}
+                  onSelect={() => selectFarm(farm.id)}
                 />
               ))}
             </SimpleGrid>
@@ -862,7 +984,7 @@ function Quests() {
 
         {!loading && selectedFarm && !selectedMonolith && (
           <Stack gap="lg">
-            <UnstyledButton onClick={() => setSelectedFarmId(null)}>
+            <UnstyledButton onClick={() => selectFarm(null)}>
               <Paper
                 radius="xl"
                 shadow="sm"
@@ -899,7 +1021,7 @@ function Quests() {
           <FarmOverview
             farm={selectedFarm}
             monolith={selectedMonolith}
-            onBack={() => setSelectedFarmId(null)}
+            onBack={() => selectFarm(null)}
           />
         )}
       </Box>
