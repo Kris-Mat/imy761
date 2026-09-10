@@ -1,11 +1,14 @@
 import { createPortal } from 'react-dom';
-import {
-  FAR_MOUNTAINS_PATH, FRONT_CHARCOAL_PATH, HILL_CURVE, MID_MOUNTAINS_PATH
-} from '../lib/hillShapes';
-import { HILL_VERTICAL_OFFSET } from '../lib/heroParallax';
 
-// Same sky/mountains/hill/charcoal scene as MountainBackground on Home, but
-// with no scroll-parallax and no road/pins — a plain static backdrop.
+// Same warm backdrop as the Quests redesign mockup: a cream gradient sky
+// with three large overlapping circles anchored off the bottom edge, their
+// tops peeking up as soft rolling hills — not the jagged mountain-peak SVG
+// silhouette MountainBackground draws on Home. That shape is deliberately
+// left alone here: its road + farm pins overlay is calibrated to the exact
+// HILL_CURVE path, and swapping the hill shape under it would need that
+// whole system re-tuned, not just recoloured. Every other page (Profile,
+// Quests, Dashboard, QuestRunner, Admin) uses this static scene, so this
+// change alone covers the app's non-Home backdrop.
 //
 // Rendered via a portal straight into document.body: Layout's ScrollSmoother
 // applies a CSS transform to #smooth-content to fake smooth scrolling, and a
@@ -15,38 +18,32 @@ import { HILL_VERTICAL_OFFSET } from '../lib/heroParallax';
 // to body sidesteps that entirely.
 function StaticMountainScene() {
   return createPortal(
-    <svg
-      viewBox="0 0 1600 900"
-      preserveAspectRatio="xMidYMax slice"
+    <div
       aria-hidden="true"
       style={{
-        position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1
+        position: 'fixed',
+        inset: 0,
+        zIndex: -1,
+        overflow: 'hidden',
+        background: 'linear-gradient(180deg, #fdf8ee 0%, #f5ead8 55%, #f0e4cd 100%)'
       }}
     >
-      <rect
-        width={1600}
-        height={900}
-        fill="var(--mantine-color-sky-0)"
+      <div
+        style={{
+          position: 'absolute', left: '-12%', right: '-12%', bottom: '-38vh', height: '72vh', borderRadius: '50%', background: '#e1eecc'
+        }}
       />
-      <path
-        d={FAR_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-1)"
+      <div
+        style={{
+          position: 'absolute', left: '-20%', right: '-30%', bottom: '-46vh', height: '74vh', borderRadius: '50%', background: '#ccdbb2'
+        }}
       />
-      <path
-        d={MID_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-2)"
+      <div
+        style={{
+          position: 'absolute', left: '-30%', right: '-8%', bottom: '-56vh', height: '78vh', borderRadius: '50%', background: '#aebf92'
+        }}
       />
-      <g transform={`translate(0, ${HILL_VERTICAL_OFFSET})`}>
-        <path
-          d={`${HILL_CURVE} L1600,900 L0,900 Z`}
-          fill="var(--mantine-color-moss-4)"
-        />
-      </g>
-      <path
-        d={FRONT_CHARCOAL_PATH}
-        fill="var(--mantine-color-charcoal-5)"
-      />
-    </svg>,
+    </div>,
     document.body
   );
 }

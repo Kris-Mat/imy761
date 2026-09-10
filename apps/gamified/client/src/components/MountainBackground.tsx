@@ -69,27 +69,49 @@ function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
         position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0
       }}
     >
+      <defs>
+        <linearGradient
+          id="heroSkyGradient"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
+          <stop
+            offset="0%"
+            stopColor="#fdf8ee"
+          />
+          <stop
+            offset="55%"
+            stopColor="#f5ead8"
+          />
+          <stop
+            offset="100%"
+            stopColor="#f0e4cd"
+          />
+        </linearGradient>
+      </defs>
       <rect
         width={1600}
         height={900}
-        fill="var(--mantine-color-sky-0)"
+        fill="url(#heroSkyGradient)"
       />
       <path
         ref={farRef}
         d={FAR_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-1)"
+        fill="#e1eecc"
       />
       <path
         ref={midRef}
         d={MID_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-2)"
+        fill="#ccdbb2"
       />
       {/* Outer group is a static vertical nudge; inner group is what scroll-parallax animates. */}
       <g transform={`translate(0, ${HILL_VERTICAL_OFFSET})`}>
         <g ref={hillRoadRef}>
           <path
             d={`${HILL_CURVE} L1600,900 L0,900 Z`}
-            fill="var(--mantine-color-moss-4)"
+            fill="#aebf92"
           />
           <path
             d={ROAD_CURVE}

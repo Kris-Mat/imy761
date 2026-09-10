@@ -106,43 +106,6 @@ function FarmerPortrait({ farmerName, farmOrderIndex }: { farmerName: string; fa
   );
 }
 
-function AssistantPortrait() {
-  return (
-    <Stack
-      gap={6}
-      align="center"
-      w={110}
-    >
-      <Flex
-        align="center"
-        justify="center"
-        style={{
-          width: 90,
-          height: 90,
-          borderRadius: '50%',
-          backgroundColor: 'var(--mantine-color-terracotta-1)',
-          border: '3px solid var(--mantine-color-terracotta-6)'
-        }}
-      >
-        <Icon
-          name="ChatCircleDots"
-          size={40}
-          weight="fill"
-          color="var(--mantine-color-terracotta-7)"
-        />
-      </Flex>
-      <Text
-        fz="sm"
-        fw={600}
-        c="charcoal.8"
-        ta="center"
-      >
-        Assistant
-      </Text>
-    </Stack>
-  );
-}
-
 // Horizons are drawn as equal-height slices over the monolith image, top to
 // bottom in the order they're listed. Shared by the explore step (click to
 // select) and the in-question reference (hover to peek).
@@ -446,10 +409,12 @@ interface QuestionStepProps {
   // Review mode reached a question the user skipped on their last pass, so
   // there's no answer of theirs to mark up.
   unanswered: boolean;
+  farmerName: string;
+  farmOrderIndex: number;
 }
 
 function QuestionStep({
-  monolith, question, selectedOptionId, onSelect, revealed, error, unanswered
+  monolith, question, selectedOptionId, onSelect, revealed, error, unanswered, farmerName, farmOrderIndex
 }: QuestionStepProps) {
   // Only set for a horizon-linked question (Question.horizonId) — undefined
   // for every other question type.
@@ -489,7 +454,10 @@ function QuestionStep({
           gap="md"
           align="flex-start"
         >
-          <AssistantPortrait />
+          <FarmerPortrait
+            farmerName={farmerName}
+            farmOrderIndex={farmOrderIndex}
+          />
           <Paper
             radius="lg"
             p="lg"
@@ -982,6 +950,8 @@ function QuestRunnerInner({
               revealed={revealed}
               error={error}
               unanswered={isReview && storedOptionId === null}
+              farmerName={farmerName}
+              farmOrderIndex={farmOrderIndex}
             />
           )}
         </Box>
