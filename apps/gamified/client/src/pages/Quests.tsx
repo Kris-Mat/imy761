@@ -648,27 +648,16 @@ function FarmOverview({ farm, monolith, onBack }: {
           </Group>
 
           <Box
-            pos="relative"
+            className="quest-day-scroll"
             style={{
-              overflowX: 'auto', paddingTop: 30, paddingBottom: 12
+              overflowX: 'auto', paddingTop: 30, paddingBottom: 16
             }}
           >
-            <Box
-              pos="absolute"
-              left={0}
-              right={0}
-              top={48}
-              h={2}
-              style={{
-                backgroundImage: 'repeating-linear-gradient(90deg, var(--mantine-color-charcoal-3) 0 12px, transparent 12px 22px)',
-                opacity: 0.6
-              }}
-            />
             <Group
               gap="md"
               wrap="nowrap"
               align="flex-start"
-              pos="relative"
+              style={{ width: 'max-content' }}
             >
               {days.map((day, index) => (
                 <DayCard
