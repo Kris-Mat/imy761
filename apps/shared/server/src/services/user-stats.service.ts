@@ -32,12 +32,13 @@ export class UserStatsService {
       throw new Error('User not found; sync the user before requesting stats');
     }
 
-    const [gameStat, tasksCompleted, correctAnswers, completedAtDates, badgesEarned] = await Promise.all([
+    const [gameStat, tasksCompleted, correctAnswers, completedAtDates, badgesEarned, categoryAccuracy] = await Promise.all([
       userStatsRepository.findGameStat(user.id),
       userStatsRepository.countCompletedAttempts(user.id),
       userStatsRepository.countCorrectAttempts(user.id),
       userStatsRepository.findCompletedAttemptDates(user.id),
-      userStatsRepository.countAchievements(user.id)
+      userStatsRepository.countAchievements(user.id),
+      userStatsRepository.findCategoryAccuracyForUser(user.id)
     ]);
 
     return {
@@ -46,7 +47,8 @@ export class UserStatsService {
       tasksCompleted,
       correctAnswers,
       currentStreak: calculateStreak(completedAtDates),
-      badgesEarned
+      badgesEarned,
+      categoryAccuracy
     };
   }
 

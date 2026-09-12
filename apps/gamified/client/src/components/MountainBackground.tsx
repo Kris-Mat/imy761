@@ -1,27 +1,39 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from '../lib/gsap';
-import { HILL_PARALLAX_DISTANCE, HILL_VERTICAL_OFFSET } from '../lib/heroParallax';
-import {
-  FAR_MOUNTAINS_PATH, FRONT_CHARCOAL_PATH, HILL_CURVE, MID_MOUNTAINS_PATH
-} from '../lib/hillShapes';
+import { HILL_PARALLAX_DISTANCE } from '../lib/heroParallax';
 
 interface MountainBackgroundProps {
   heroSectionRef: React.RefObject<HTMLDivElement | null>;
 }
 
-// The road only starts once the hero text column has cleared (~49% across)
-// so it never runs behind the welcome message/avatar. From x=950 onward it
-// reuses the exact same points as HILL_CURVE, so the two stay in lockstep;
-// only the lead-in segment (before the text clears) differs.
-const ROAD_CURVE = 'M780,358 C837,382 863,396 950,430 '
-  + 'C1037,464 1192,542 1300,560 C1408,578 1500,547 1600,540';
-const ROAD_OFFSET = 45;
+// Same three soft hill ellipses as StaticMountainScene (the redesigned
+// Quests page's background, now used app-wide) — cx/cy/rx/ry below are that
+// design's CSS recipe (left/right/bottom/height percentages of the 1600x900
+// viewBox, border-radius: 50%) converted to ellipse geometry, not the old
+// jagged mountain-peak paths. No front "charcoal ground" layer either,
+// matching that same redesign.
+const FAR_HILL = {
+  cx: 800, cy: 918, rx: 992, ry: 324
+};
+const MID_HILL = {
+  cx: 880, cy: 981, rx: 1200, ry: 333
+};
+const FRONT_HILL = {
+  cx: 624, cy: 1053, rx: 1104, ry: 351
+};
+
+// Hand-fit to FRONT_HILL's own boundary (y = cy - ry*sqrt(1-((x-cx)/rx)^2)),
+// nudged down ~18 units so the road reads as sitting on the hill rather than
+// floating exactly on its edge. Starts at x=950 — same reasoning as before,
+// the road only starts once the hero text column has cleared (~49% across)
+// so it never runs behind the welcome message/avatar.
+const ROAD_CURVE = 'M950,736 C1030,744 1100,750 1200,772 '
+  + 'C1300,794 1420,826 1500,857 C1550,875 1580,893 1600,907';
 
 function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
-  const farRef = useRef<SVGPathElement>(null);
-  const midRef = useRef<SVGPathElement>(null);
+  const farRef = useRef<SVGEllipseElement>(null);
+  const midRef = useRef<SVGEllipseElement>(null);
   const hillRoadRef = useRef<SVGGElement>(null);
-  const frontRef = useRef<SVGPathElement>(null);
 
   useEffect(() => {
     if (!heroSectionRef.current) return undefined;
@@ -35,9 +47,6 @@ function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
       },
       {
         el: hillRoadRef.current, distance: HILL_PARALLAX_DISTANCE
-      },
-      {
-        el: frontRef.current, distance: 170
       }
     ];
 
@@ -69,49 +78,71 @@ function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
         position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0
       }}
     >
+      <defs>
+        <linearGradient
+          id="heroSkyGradient"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
+          <stop
+            offset="0%"
+            stopColor="#fdf8ee"
+          />
+          <stop
+            offset="55%"
+            stopColor="#f5ead8"
+          />
+          <stop
+            offset="100%"
+            stopColor="#f0e4cd"
+          />
+        </linearGradient>
+      </defs>
       <rect
         width={1600}
         height={900}
-        fill="var(--mantine-color-sky-0)"
+        fill="url(#heroSkyGradient)"
       />
-      <path
+      <ellipse
         ref={farRef}
-        d={FAR_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-1)"
+        cx={FAR_HILL.cx}
+        cy={FAR_HILL.cy}
+        rx={FAR_HILL.rx}
+        ry={FAR_HILL.ry}
+        fill="#e1eecc"
       />
-      <path
+      <ellipse
         ref={midRef}
-        d={MID_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-2)"
+        cx={MID_HILL.cx}
+        cy={MID_HILL.cy}
+        rx={MID_HILL.rx}
+        ry={MID_HILL.ry}
+        fill="#ccdbb2"
       />
-      {/* Outer group is a static vertical nudge; inner group is what scroll-parallax animates. */}
-      <g transform={`translate(0, ${HILL_VERTICAL_OFFSET})`}>
-        <g ref={hillRoadRef}>
-          <path
-            d={`${HILL_CURVE} L1600,900 L0,900 Z`}
-            fill="var(--mantine-color-moss-4)"
-          />
-          <path
-            d={ROAD_CURVE}
-            transform={`translate(0, ${ROAD_OFFSET})`}
-            fill="none"
-            stroke="var(--mantine-color-terracotta-9)"
-            strokeWidth={16}
-            strokeLinecap="round"
-          />
-          <circle
-            cx={780}
-            cy={358 + ROAD_OFFSET}
-            r={12}
-            fill="var(--mantine-color-terracotta-9)"
-          />
-        </g>
+      <g ref={hillRoadRef}>
+        <ellipse
+          cx={FRONT_HILL.cx}
+          cy={FRONT_HILL.cy}
+          rx={FRONT_HILL.rx}
+          ry={FRONT_HILL.ry}
+          fill="#aebf92"
+        />
+        <path
+          d={ROAD_CURVE}
+          fill="none"
+          stroke="var(--mantine-color-terracotta-9)"
+          strokeWidth={16}
+          strokeLinecap="round"
+        />
+        <circle
+          cx={950}
+          cy={736}
+          r={12}
+          fill="var(--mantine-color-terracotta-9)"
+        />
       </g>
-      <path
-        ref={frontRef}
-        d={FRONT_CHARCOAL_PATH}
-        fill="var(--mantine-color-charcoal-5)"
-      />
     </svg>
   );
 }

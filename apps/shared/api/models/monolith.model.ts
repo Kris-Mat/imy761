@@ -14,6 +14,9 @@ export interface Question {
   orderIndex: number;
   prompt: string;
   options: AnswerOption[];
+  // Set only for a DIAGNOSTIC_HORIZONS question graded against one specific
+  // horizon's colour — null for every other question.
+  horizonId: number | null;
 }
 
 export interface HorizonCharacteristic {

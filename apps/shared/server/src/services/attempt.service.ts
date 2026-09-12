@@ -2,6 +2,7 @@ import { userRepository } from '../repositories/user.repository';
 import { userStatsRepository } from '../repositories/user-stats.repository';
 import { levelRepository } from '../repositories/level.repository';
 import { attemptRepository } from '../repositories/attempt.repository';
+import { achievementService } from './achievement.service';
 import type { AttemptResult } from '@shared/api/models/attempt.model';
 import type { AuthenticatedUser } from '../middleware/auth.middleware';
 
@@ -34,31 +35,50 @@ export class AttemptService {
     const currentLevelNumber = await userStatsRepository.findCurrentLevelNumber(user.id);
 
     const isCorrect = selectedOption.isCorrect;
+    const pointsEarned = isCorrect ? POINTS_PER_CORRECT_ANSWER : 0;
     await attemptRepository.create({
       userId: user.id,
       questionId,
       selectedOptionId,
       isCorrect,
-      pointsEarned: isCorrect ? POINTS_PER_CORRECT_ANSWER : 0,
+      pointsEarned,
       questionShownAt: new Date(questionShownAt)
     });
+    await userStatsRepository.incrementTotalXp(user.id, pointsEarned);
+
+    // Computed unconditionally (not just when levelNumber gates a level-up
+    // below) since achievement evaluation cares about the score for whatever
+    // level was just played, including a replay of an earlier one.
+    const scorePercent = await levelRepository.findScoreForLevel(question.levelId, user.id);
+    const passedThreshold = scorePercent >= PASSING_SCORE_PERCENT;
 
     // Levels are all playable in any order, so currentLevelId is no longer a
     // gate — it's the user's furthest-reached level, which surfaces as their
     // rank (UserStats.rank comes from this level's title). It therefore only
     // ever moves forward: replaying an earlier level can't pull the rank back
     // down, but passing a later one out of order does push it up.
-    if (question.levelNumber >= currentLevelNumber) {
-      const scorePercent = await levelRepository.findScoreForLevel(question.levelId, user.id);
-      if (scorePercent >= PASSING_SCORE_PERCENT) {
-        const nextLevel = await levelRepository.findByLevelNumber(question.levelNumber + 1);
-        if (nextLevel) {
-          await userStatsRepository.advanceCurrentLevel(user.id, nextLevel.id);
-        }
+    let leveledUp = false;
+    if (question.levelNumber >= currentLevelNumber && passedThreshold) {
+      const nextLevel = await levelRepository.findByLevelNumber(question.levelNumber + 1);
+      if (nextLevel) {
+        await userStatsRepository.advanceCurrentLevel(user.id, nextLevel.id);
+        leveledUp = true;
       }
     }
 
-    return { isCorrect };
+    const totalAttempts = await userStatsRepository.countCompletedAttempts(user.id);
+    const newlyUnlockedAchievements = await achievementService.evaluateAndAward({
+      userId: user.id,
+      levelId: question.levelId,
+      scorePercent,
+      passedThreshold,
+      leveledUp,
+      isFirstAttemptEver: totalAttempts === 1
+    });
+
+    return {
+      isCorrect, leveledUp, newlyUnlockedAchievements
+    };
   }
 
 }

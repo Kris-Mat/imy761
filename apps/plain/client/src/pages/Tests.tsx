@@ -2,7 +2,7 @@ import { Accordion, Loader, NavLink as MantineNavLink, Stack, Text, Title } from
 import { useNavigate } from 'react-router';
 import { useContent } from '../context/ContentContext';
 import { Icon } from '@shared/ui/Icon';
-import { categoryLabels } from '../lib/questionCategory';
+import { questionNavLabels } from '../lib/questionCategory';
 import SectionCard from '../components/SectionCard';
 
 function ChapterStatusIcon({ completed }: { completed: boolean; }) {
@@ -44,6 +44,7 @@ function Tests() {
         <Accordion variant="separated" radius="md">
           {monoliths.map((monolith) => {
             const completed = completedMonolithIds.includes(monolith.id);
+            const navLabels = questionNavLabels(monolith.questions);
             return (
               <Accordion.Item key={monolith.id} value={String(monolith.id)}>
                 <Accordion.Control>
@@ -60,7 +61,7 @@ function Tests() {
                     {monolith.questions.map((question, index) => (
                       <MantineNavLink
                         key={question.id}
-                        label={categoryLabels[question.category]}
+                        label={navLabels.get(question.id)!}
                         // Step 0 in ChapterRunner is always the monolith
                         // overview, so a question at position `index` in
                         // monolith.questions is step `index + 1`.

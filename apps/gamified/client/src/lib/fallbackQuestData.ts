@@ -19,13 +19,40 @@ function soilStripImage(colors: [string, string, string]) {
 
 export const FALLBACK_FARMS: FarmProgress[] = [
   {
-    id: -1, name: 'Redridge Farm', farmerName: 'Pieter Koekemoer', orderIndex: 1, visited: true, completed: true, scorePercent: 82, questions: []
+    id: -1,
+    name: 'Redridge Farm',
+    farmerName: 'Pieter Koekemoer',
+    description: 'A maize farm on deep, free-draining red soil that rarely lets the farmer down.',
+    scenario: "Pieter wants to know why his maize yields are so consistent on Redridge Farm's upper slopes.",
+    orderIndex: 1,
+    visited: true,
+    completed: true,
+    scorePercent: 82,
+    questions: []
   },
   {
-    id: -2, name: 'Green Valley Farm', farmerName: 'Nomsa Radebe', orderIndex: 2, visited: false, completed: false, scorePercent: null, questions: []
+    id: -2,
+    name: 'Green Valley Farm',
+    farmerName: 'Nomsa Radebe',
+    description: 'A valley-bottom farm where a mottled subsoil hints at seasonal waterlogging.',
+    scenario: "Nomsa has noticed her fields waterlog after the rains — help her work out why.",
+    orderIndex: 2,
+    visited: false,
+    completed: false,
+    scorePercent: null,
+    questions: []
   },
   {
-    id: -3, name: 'Sunrise Farm', farmerName: 'Willem Botha', orderIndex: 3, visited: false, completed: false, scorePercent: null, questions: []
+    id: -3,
+    name: 'Sunrise Farm',
+    farmerName: 'Willem Botha',
+    description: 'A shallow, stony farm where hard rock sits close beneath the topsoil.',
+    scenario: "Willem is wondering whether Sunrise Farm's soil can support a new orchard.",
+    orderIndex: 3,
+    visited: false,
+    completed: false,
+    scorePercent: null,
+    questions: []
   }
 ];
 
@@ -76,6 +103,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'DIAGNOSTIC_HORIZONS',
         orderIndex: 0,
         prompt: 'Which horizon shows the highest organic matter content?',
+        horizonId: null,
         options: [
           {
             id: -12011, text: 'Topsoil', isCorrect: true, orderIndex: 0
@@ -90,6 +118,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'SUITABILITY',
         orderIndex: 1,
         prompt: 'Given the well-drained subsoil, is this profile suitable for deep-rooted crops?',
+        horizonId: null,
         options: [
           {
             id: -12021, text: 'Yes, drainage is not limiting', isCorrect: true, orderIndex: 0
@@ -140,6 +169,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'SOIL_FORM',
         orderIndex: 0,
         prompt: 'What does mottling in the subsoil most likely indicate?',
+        horizonId: null,
         options: [
           {
             id: -13011, text: 'Periodic waterlogging', isCorrect: true, orderIndex: 0
@@ -154,6 +184,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'LANDSCAPE_POSITION',
         orderIndex: 1,
         prompt: 'A mottled subsoil like this is most typical of which landscape position?',
+        horizonId: null,
         options: [
           {
             id: -13021, text: 'Valley bottom / footslope', isCorrect: true, orderIndex: 0
@@ -204,6 +235,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'DIAGNOSTIC_HORIZONS',
         orderIndex: 0,
         prompt: 'What limits root depth in this profile?',
+        horizonId: null,
         options: [
           {
             id: -14011, text: 'Shallow hard rock', isCorrect: true, orderIndex: 0
@@ -218,6 +250,7 @@ export const FALLBACK_MONOLITHS: Monolith[] = [
         category: 'SUITABILITY',
         orderIndex: 1,
         prompt: 'Is this profile suitable for deep-rooted orchard crops?',
+        horizonId: null,
         options: [
           {
             id: -14021, text: 'No, effective depth is too shallow', isCorrect: true, orderIndex: 0

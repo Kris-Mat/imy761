@@ -52,6 +52,20 @@ export class AttemptRepository {
     };
   }
 
+  // One entry per questionId that has at least one attempt from this user;
+  // a question with zero attempts is simply absent from the map.
+  public async countAttemptsPerQuestion(userId: number, questionIds: number[]): Promise<Map<number, number>> {
+    if (questionIds.length === 0) return new Map();
+    const groups = await getPrismaClient().userAttempt.groupBy({
+      by: ['questionId'],
+      where: {
+        userId, questionId: { in: questionIds }
+      },
+      _count: { _all: true }
+    });
+    return new Map(groups.map((group) => [group.questionId, group._count._all]));
+  }
+
   public async create(data: {
     userId: number;
     questionId: number;

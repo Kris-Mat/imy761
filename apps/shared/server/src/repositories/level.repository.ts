@@ -24,6 +24,8 @@ export class LevelRepository {
         levelNumber: true,
         title: true,
         farmerName: true,
+        description: true,
+        scenario: true,
         soilFamilyCode: {
           select: {
             monolith: {
@@ -47,6 +49,8 @@ export class LevelRepository {
         id: level.id,
         name: level.title,
         farmerName: level.farmerName,
+        description: level.description,
+        scenario: level.scenario,
         orderIndex: level.levelNumber,
         visited: questions.some((question) => question.attempts.length > 0),
         completed: questions.length > 0 && questions.every((question) => question.attempts.some((attempt) => attempt.isCorrect)),
@@ -69,6 +73,14 @@ export class LevelRepository {
     return getPrismaClient().level.findUnique({
       where: { levelNumber }, select: { id: true }
     });
+  }
+
+  public async findQuestionIdsForLevel(levelId: number): Promise<number[]> {
+    const questions = await getPrismaClient().question.findMany({
+      where: { monolith: { soilFamilyCode: { level: { id: levelId } } } },
+      select: { id: true }
+    });
+    return questions.map((question) => question.id);
   }
 
   // Recomputes a level's score fresh from the DB right after an attempt is

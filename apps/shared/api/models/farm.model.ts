@@ -10,6 +10,8 @@ export interface FarmProgress {
   id: number;
   name: string;
   farmerName: string;
+  description: string;
+  scenario: string;
   orderIndex: number;
   visited: boolean;
   // True once every question in the level's monolith has at least one

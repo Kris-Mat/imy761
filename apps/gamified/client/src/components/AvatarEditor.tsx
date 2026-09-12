@@ -104,6 +104,7 @@ function AvatarEditor({ config, onChange }: AvatarEditorProps) {
     <Tabs
       defaultValue="face"
       color="terracotta"
+      variant="pills"
     >
       <Tabs.List>
         <Tabs.Tab value="face">Face & Body</Tabs.Tab>

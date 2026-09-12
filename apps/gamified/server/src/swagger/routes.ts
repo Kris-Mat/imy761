@@ -49,6 +49,22 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "QuestionCategory": {
+        "dataType": "refAlias",
+        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["SOIL_FAMILY_CODE"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "CategoryAccuracy": {
+        "dataType": "refObject",
+        "properties": {
+            "category": {"ref":"QuestionCategory","required":true},
+            "correct": {"dataType":"double","required":true},
+            "attempted": {"dataType":"double","required":true},
+            "accuracyPercent": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "UserStats": {
         "dataType": "refObject",
         "properties": {
@@ -58,6 +74,7 @@ const models: TsoaRoute.Models = {
             "correctAnswers": {"dataType":"double","required":true},
             "currentStreak": {"dataType":"double","required":true},
             "badgesEarned": {"dataType":"double","required":true},
+            "categoryAccuracy": {"dataType":"array","array":{"dataType":"refObject","ref":"CategoryAccuracy"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -78,11 +95,25 @@ const models: TsoaRoute.Models = {
             "id": {"dataType":"double","required":true},
             "name": {"dataType":"string","required":true},
             "farmerName": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+            "scenario": {"dataType":"string","required":true},
             "orderIndex": {"dataType":"double","required":true},
             "visited": {"dataType":"boolean","required":true},
             "completed": {"dataType":"boolean","required":true},
             "scorePercent": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
             "questions": {"dataType":"array","array":{"dataType":"refObject","ref":"FarmQuestionProgress"},"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "Achievement": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"double","required":true},
+            "title": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+            "earned": {"dataType":"boolean","required":true},
+            "earnedAt": {"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},
         },
         "additionalProperties": false,
     },
@@ -114,6 +145,8 @@ const models: TsoaRoute.Models = {
         "dataType": "refObject",
         "properties": {
             "isCorrect": {"dataType":"boolean","required":true},
+            "leveledUp": {"dataType":"boolean","required":true},
+            "newlyUnlockedAchievements": {"dataType":"array","array":{"dataType":"refObject","ref":"Achievement"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -126,11 +159,6 @@ const models: TsoaRoute.Models = {
             "questionShownAt": {"dataType":"string","required":true},
         },
         "additionalProperties": false,
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "QuestionCategory": {
-        "dataType": "refAlias",
-        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["SOIL_FAMILY_CODE"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "StudentQuestionStat": {
@@ -204,6 +232,7 @@ const models: TsoaRoute.Models = {
             "orderIndex": {"dataType":"double","required":true},
             "prompt": {"dataType":"string","required":true},
             "options": {"dataType":"array","array":{"dataType":"refObject","ref":"AnswerOption"},"required":true},
+            "horizonId": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
         },
         "additionalProperties": false,
     },
@@ -374,6 +403,37 @@ export function RegisterRoutes(app: Router) {
 
               await templateService.apiHandler({
                 methodName: 'getMyFarms',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: undefined,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsUserController_getMyAchievements: Record<string, TsoaRoute.ParameterSchema> = {
+                request: {"in":"request","name":"request","required":true,"dataType":"object"},
+        };
+        app.get('/users/me/achievements',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(UserController)),
+            ...(fetchMiddlewares<RequestHandler>(UserController.prototype.getMyAchievements)),
+
+            async function UserController_getMyAchievements(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsUserController_getMyAchievements, request, response });
+
+                const controller = new UserController();
+
+              await templateService.apiHandler({
+                methodName: 'getMyAchievements',
                 controller,
                 response,
                 next,

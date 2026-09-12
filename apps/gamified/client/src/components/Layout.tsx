@@ -96,6 +96,10 @@ function Layout() {
           />
         </Anchor>
         <NavItem
+          to="/dashboard"
+          label="Dashboard"
+        />
+        <NavItem
           to="/quests"
           label="Quests"
         />

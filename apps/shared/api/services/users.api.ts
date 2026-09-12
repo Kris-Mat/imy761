@@ -3,6 +3,7 @@ import { type User, type AvatarConfig } from "../models/user.model";
 import { type UserStats } from "../models/user-stats.model";
 import { type FarmProgress } from "../models/farm.model";
 import { type AttemptResult } from "../models/attempt.model";
+import { type Achievement } from "../models/achievement.model";
 import { type StudentAnalytics } from "../models/admin.model";
 
 class UsersApi extends BaseApi {
@@ -31,6 +32,13 @@ class UsersApi extends BaseApi {
   getMyFarms(accessToken: string): Promise<FarmProgress[]> {
     return this.get<FarmProgress[]>(
       `users/me/farms`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
+  getMyAchievements(accessToken: string): Promise<Achievement[]> {
+    return this.get<Achievement[]>(
+      `users/me/achievements`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
   }

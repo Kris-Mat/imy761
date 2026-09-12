@@ -4,6 +4,7 @@ export default [
   layout('layouts/RequireAuth.tsx', [
     layout('components/Layout.tsx', [
       index('pages/Home.tsx'),
+      route('dashboard', 'pages/Dashboard.tsx'),
       route('profile', 'pages/Profile.tsx'),
       route('quests', 'pages/Quests.tsx'),
       route('quests/:farmId/:stepIndex', 'pages/QuestRunner.tsx'),
