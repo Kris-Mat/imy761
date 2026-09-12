@@ -1,4 +1,6 @@
-import { Paper, SimpleGrid, Stack, Text } from '@mantine/core';
+import {
+  Box, Paper, SimpleGrid, Stack, Text
+} from '@mantine/core';
 import { Icon } from '@shared/ui/Icon';
 import type { Achievement } from '@shared/api/models/achievement.model';
 
@@ -17,22 +19,20 @@ function formatEarnedAt(earnedAt: string) {
   });
 }
 
-// Locked/unlocked treatment mirrors FarmerProgressGrid.tsx's badge styling
-// (reduced opacity + grayscale + muted border when incomplete, full colour +
-// accent border + glow when complete) so trophies read as the same visual
-// language as farmer progress badges.
+// Locked/unlocked treatment: a solid gold-tinted card with a spinning medal
+// for an earned trophy, a pale dashed-border card with a greyed-out medal for
+// a locked one — the same earned/locked split FarmerProgressGrid.tsx's badges
+// draw, just in this card's own colour language instead of that one's.
 function TrophyBadge({ achievement }: { achievement: Achievement; }) {
   const { earned } = achievement;
   return (
     <Paper
-      radius="md"
-      p="md"
+      radius="lg"
+      py={22}
+      px="md"
+      bg={earned ? '#fdf3dd' : '#f7f2e8'}
       style={{
-        border: earned ? '2px solid var(--mantine-color-mustard-5)' : '2px solid var(--mantine-color-charcoal-2)',
-        boxShadow: earned ? '0 0 0 3px var(--mantine-color-mustard-1)' : 'none',
-        opacity: earned ? 1 : 0.4,
-        filter: earned ? 'none' : 'grayscale(70%)',
-        transition: 'opacity 200ms ease, box-shadow 200ms ease'
+        border: earned ? '2px solid #e0b457' : '2px dashed var(--mantine-color-charcoal-2)'
       }}
     >
       <Stack
@@ -40,36 +40,47 @@ function TrophyBadge({ achievement }: { achievement: Achievement; }) {
         align="center"
         ta="center"
       >
-        <Icon
-          name="Trophy"
-          size={36}
-          weight={earned ? 'fill' : 'regular'}
-          color={earned ? 'var(--mantine-color-mustard-6)' : 'var(--mantine-color-charcoal-4)'}
-        />
+        <Box
+          w={50}
+          h={50}
+          mb={4}
+          style={{
+            borderRadius: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: earned ? '#e0b457' : 'var(--mantine-color-charcoal-1)',
+            animation: earned ? 'quest-flag-wave 4.2s ease-in-out infinite' : 'none'
+          }}
+        >
+          <Icon
+            name="Trophy"
+            size={24}
+            weight={earned ? 'fill' : 'regular'}
+            color={earned ? '#fff8f1' : 'var(--mantine-color-charcoal-4)'}
+          />
+        </Box>
         <Text
           fz="sm"
           fw={700}
-          c="charcoal.9"
+          c={earned ? 'charcoal.9' : 'charcoal.5'}
         >
           {achievement.title}
         </Text>
         <Text
           fz="xs"
-          c="charcoal.6"
+          c={earned ? 'charcoal.6' : 'charcoal.4'}
         >
           {achievement.description}
         </Text>
-        {earned && achievement.earnedAt && (
-          <Text
-            fz="xs"
-            fw={600}
-            c="mustard.7"
-          >
-            Earned
-            {' '}
-            {formatEarnedAt(achievement.earnedAt)}
-          </Text>
-        )}
+        <Text
+          fz={11}
+          fw={800}
+          mt={4}
+          c={earned ? '#8a6420' : 'charcoal.4'}
+        >
+          {earned && achievement.earnedAt ? `Earned ${formatEarnedAt(achievement.earnedAt)}` : 'Not yet earned'}
+        </Text>
       </Stack>
     </Paper>
   );
