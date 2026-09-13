@@ -55,15 +55,23 @@ const PIT_LAYERS: { category: QuestionCategory; soilColor: string; depth: string
 // Fixed slots for up to three farms, laid out on JourneyPanel's own mini
 // hill — same "recede up and to the right" arrangement as QuestScene's
 // FARM_STATIONS, just re-tuned for this smaller card's own proportions.
+//
+// JourneyPanel's Paper has no fixed height (overflow:hidden clips at
+// whatever height the title/subtitle + the h=190 hill Box add up to,
+// roughly 260px) — the third slot's avatar+label previously extended a few
+// px past that, getting clipped at the bottom. Moved all three up, and
+// gave the third one a slightly larger gap from the second (22 rather than
+// the even 20 between the first two) so it settles further into the
+// slope's curve instead of sitting high/detached from it.
 const JOURNEY_PINS: { xPct: number; yPct: number; }[] = [
   {
-    xPct: 17, yPct: 22
+    xPct: 17, yPct: 12
   },
   {
-    xPct: 46, yPct: 42
+    xPct: 46, yPct: 32
   },
   {
-    xPct: 75, yPct: 62
+    xPct: 75, yPct: 54
   }
 ];
 

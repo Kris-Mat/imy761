@@ -639,6 +639,49 @@ interface QuestionScreenProps {
   onExit: () => void;
 }
 
+// Reserved space at the bottom of the question content so the fixed footer
+// bar below never covers the last option (or the review "You didn't answer
+// this question" note) — kept in one constant so the Box's own bottom
+// padding and the bar's height can never drift out of sync.
+const QUESTION_FOOTER_HEIGHT = 96;
+
+// The Submit/Next (and, in review, Previous) action row, fixed to the
+// bottom of the viewport regardless of how far the options above scroll.
+// Portaled to document.body rather than styled fixed in place: this
+// component renders inside Layout's #smooth-content, which GSAP
+// ScrollSmoother applies a CSS transform to in order to fake smooth
+// scrolling — and a transformed ancestor turns position:fixed descendants
+// into position:absolute relative to IT, not the real viewport (the same
+// reason StaticMountainScene/QuestScene/AchievementGlowBeat all portal out
+// to body instead of using an in-place fixed style).
+function QuestionFooterBar({ children }: { children: React.ReactNode; }) {
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        // Below Mantine's modal (200) and notification (400/450) layers, so
+        // SoilPitModal and any achievement toast still render on top of it,
+        // but above ordinary page content.
+        zIndex: 150,
+        background: '#fdf8ee',
+        borderTop: '1px solid var(--mantine-color-charcoal-2)',
+        boxShadow: '0 -8px 24px rgba(86, 66, 40, 0.08)'
+      }}
+    >
+      <Box
+        px="xl"
+        py="md"
+      >
+        {children}
+      </Box>
+    </div>,
+    document.body
+  );
+}
+
 function QuestionScreen({
   farm, monolith, question, stepIndex, sameCategoryQuestions, selectedOptionId, onSelect, revealed, submitting,
   isReview, unanswered, farmerName, farmOrderIndex, onSubmit, onNext, onPrevious, canGoPrevious, onExit
@@ -673,7 +716,7 @@ function QuestionScreen({
     <Box
       mih="100dvh"
       pt={90}
-      pb={80}
+      pb={QUESTION_FOOTER_HEIGHT}
       px="xl"
       style={{ boxSizing: 'border-box' }}
     >
@@ -914,45 +957,44 @@ function QuestionScreen({
         )}
       </Flex>
 
-      <Group
-        justify="space-between"
-        mt="xl"
-      >
-        {isReview && canGoPrevious ? (
-          <Button
-            variant="light"
-            color="charcoal"
-            radius="xl"
-            onClick={onPrevious}
-          >
-            Previous
-          </Button>
-        ) : <div />}
+      <QuestionFooterBar>
+        <Group justify="space-between">
+          {isReview && canGoPrevious ? (
+            <Button
+              variant="light"
+              color="charcoal"
+              radius="xl"
+              onClick={onPrevious}
+            >
+              Previous
+            </Button>
+          ) : <div />}
 
-        {/* Once an answer is revealed — right or wrong — the only way
-            forward is Next: a wrong answer already shows the correct one
-            above, in place, with no separate retry step. */}
-        {(isReview || revealed) && (
-          <Button
-            color="terracotta"
-            radius="xl"
-            onClick={onNext}
-          >
-            Next
-          </Button>
-        )}
-        {!isReview && !revealed && (
-          <Button
-            color="terracotta"
-            radius="xl"
-            loading={submitting}
-            disabled={!selectedOptionId}
-            onClick={onSubmit}
-          >
-            Submit Answer
-          </Button>
-        )}
-      </Group>
+          {/* Once an answer is revealed — right or wrong — the only way
+              forward is Next: a wrong answer already shows the correct one
+              above, in place, with no separate retry step. */}
+          {(isReview || revealed) && (
+            <Button
+              color="terracotta"
+              radius="xl"
+              onClick={onNext}
+            >
+              Next
+            </Button>
+          )}
+          {!isReview && !revealed && (
+            <Button
+              color="terracotta"
+              radius="xl"
+              loading={submitting}
+              disabled={!selectedOptionId}
+              onClick={onSubmit}
+            >
+              Submit Answer
+            </Button>
+          )}
+        </Group>
+      </QuestionFooterBar>
     </Box>
   );
 }

@@ -11,15 +11,19 @@ interface MountainBackgroundProps {
 // design's CSS recipe (left/right/bottom/height percentages of the 1600x900
 // viewBox, border-radius: 50%) converted to ellipse geometry, not the old
 // jagged mountain-peak paths. No front "charcoal ground" layer either,
-// matching that same redesign.
+// matching that same redesign. All three cy values (and ROAD_CURVE below)
+// are shifted 150 units up from that original recipe so the hill/road sits
+// higher in the frame, level with the welcome text rather than low near the
+// bottom edge — matched by the same ~17-point shift on ROAD_PIN_POSITIONS
+// in heroParallax.ts, so the markers stay on the road.
 const FAR_HILL = {
-  cx: 800, cy: 918, rx: 992, ry: 324
+  cx: 800, cy: 768, rx: 992, ry: 324
 };
 const MID_HILL = {
-  cx: 880, cy: 981, rx: 1200, ry: 333
+  cx: 880, cy: 831, rx: 1200, ry: 333
 };
 const FRONT_HILL = {
-  cx: 624, cy: 1053, rx: 1104, ry: 351
+  cx: 624, cy: 903, rx: 1104, ry: 351
 };
 
 // Hand-fit to FRONT_HILL's own boundary (y = cy - ry*sqrt(1-((x-cx)/rx)^2)),
@@ -27,8 +31,8 @@ const FRONT_HILL = {
 // floating exactly on its edge. Starts at x=950 — same reasoning as before,
 // the road only starts once the hero text column has cleared (~49% across)
 // so it never runs behind the welcome message/avatar.
-const ROAD_CURVE = 'M950,736 C1030,744 1100,750 1200,772 '
-  + 'C1300,794 1420,826 1500,857 C1550,875 1580,893 1600,907';
+const ROAD_CURVE = 'M950,586 C1030,594 1100,600 1200,622 '
+  + 'C1300,644 1420,676 1500,707 C1550,725 1580,743 1600,757';
 
 function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
   const farRef = useRef<SVGEllipseElement>(null);
@@ -138,7 +142,7 @@ function MountainBackground({ heroSectionRef }: MountainBackgroundProps) {
         />
         <circle
           cx={950}
-          cy={736}
+          cy={586}
           r={12}
           fill="var(--mantine-color-terracotta-9)"
         />

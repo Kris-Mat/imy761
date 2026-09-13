@@ -21,13 +21,10 @@ import QuestScene from '../components/QuestScene';
 import {
   FARM_STATIONS, NEUTRAL_CAMERA, type CameraTarget, type FarmFlagState
 } from '../lib/questScene';
+import { PAGE_FADE_MS as CONTENT_FADE_MS } from '../lib/pageTransition';
 
 // How far the camera pushes in on a selected farm's station — 1 is neutral.
 const SELECTED_ZOOM = 1.8;
-// Shorter than the camera's own ~1.1s transition (see lib/questScene.ts's
-// CAMERA_TRANSITION) — the foreground content swap finishes well before the
-// background settles, matching the mockup's layered-timing intent.
-const CONTENT_FADE_MS = 300;
 
 // Keyed by orderIndex (levelNumber), matching the convention in FarmRoad.tsx
 // and FarmerProgressGrid.tsx.
