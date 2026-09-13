@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router';
 import {
   Avatar, Box, Button, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, Title, UnstyledButton
 } from '@mantine/core';
-import { useHover } from '@mantine/hooks';
+import { useHover, useReducedMotion } from '@mantine/hooks';
 import { Icon } from '@shared/ui/Icon';
 import type { FarmProgress } from '@shared/api/models/farm.model';
 import type { Monolith } from '@shared/api/models/monolith.model';
 import { useUser } from '../context/UserContext';
 import { useMonoliths } from '../hooks/useMonoliths';
+import { useCountUp } from '../hooks/useCountUp';
+import { useTransitionEffect } from '../hooks/useTransitionEffect';
 import {
   buildQuestDays, questTargetUrl, type DayStatus, type PipStatus, type QuestDay, type QuestDayPart, type QuestTarget
 } from '../lib/questDays';
@@ -19,13 +21,10 @@ import QuestScene from '../components/QuestScene';
 import {
   FARM_STATIONS, NEUTRAL_CAMERA, type CameraTarget, type FarmFlagState
 } from '../lib/questScene';
+import { PAGE_FADE_MS as CONTENT_FADE_MS } from '../lib/pageTransition';
 
 // How far the camera pushes in on a selected farm's station — 1 is neutral.
 const SELECTED_ZOOM = 1.8;
-// Shorter than the camera's own ~1.1s transition (see lib/questScene.ts's
-// CAMERA_TRANSITION) — the foreground content swap finishes well before the
-// background settles, matching the mockup's layered-timing intent.
-const CONTENT_FADE_MS = 300;
 
 // Keyed by orderIndex (levelNumber), matching the convention in FarmRoad.tsx
 // and FarmerProgressGrid.tsx.
@@ -34,6 +33,11 @@ const farmerImages: Record<number, string> = {
   2: level2Nomsa,
   3: level3Willem
 };
+
+// How far apart each pip's fill fires when several resolve in the same
+// render — small enough that it still reads as "together", not a slow
+// chase across the row.
+const PIP_STAGGER_MS = 90;
 
 function pipColor(status: PipStatus): string {
   if (status === 'correct') return 'var(--mantine-color-moss-6)';
@@ -106,6 +110,34 @@ function dayColours(status: DayStatus): { cardBg: string; badgeBg: string; ink: 
   };
 }
 
+// One pip's own fill transition — detects going from unattempted to a
+// resolved state while mounted (never on first render) and layers a brief
+// scale-pop on top of the background-color transition already set inline.
+// `index` staggers that pop's start when several pips resolve in the same
+// render, via transitionDelay/animationDelay rather than a JS timer chain.
+function DayPip({ status, index, reducedMotion }: { status: PipStatus; index: number; reducedMotion: boolean; }) {
+  const justResolved = useTransitionEffect(
+    status,
+    (previous, next) => previous === 'unattempted' && next !== 'unattempted',
+    420 + index * PIP_STAGGER_MS
+  );
+  const delay = `${index * PIP_STAGGER_MS}ms`;
+
+  return (
+    <Box
+      w={18}
+      h={9}
+      style={{
+        borderRadius: 999,
+        background: pipColor(status),
+        transition: 'background 260ms ease',
+        transitionDelay: delay,
+        animation: justResolved && !reducedMotion ? `quest-pip-fill 420ms ease-out ${delay}` : 'none'
+      }}
+    />
+  );
+}
+
 function DayCard({ day, dayNumber, index, selected, onClick }: {
   day: QuestDay;
   dayNumber: number;
@@ -114,7 +146,16 @@ function DayCard({ day, dayNumber, index, selected, onClick }: {
   onClick: () => void;
 }) {
   const { hovered, ref } = useHover<HTMLButtonElement>();
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
   const colours = dayColours(day.status);
+  // Only the active-to-done edge glows — matches the ticket's own scope
+  // (don't animate ready->active or invent a transition for the two
+  // synthetic days, which never carry this status pair at all).
+  const justCompleted = useTransitionEffect(
+    day.status,
+    (previous, next) => previous === 'active' && next === 'done',
+    700
+  );
 
   return (
     <UnstyledButton
@@ -133,7 +174,8 @@ function DayCard({ day, dayNumber, index, selected, onClick }: {
           backgroundColor: colours.cardBg,
           boxShadow: selected ? 'var(--mantine-shadow-lg)' : 'var(--mantine-shadow-sm)',
           transform: hovered && !selected ? 'translateY(-3px)' : 'none',
-          transition: 'transform 150ms ease, box-shadow 150ms ease'
+          transition: 'transform 150ms ease, box-shadow 150ms ease',
+          animation: justCompleted && !reducedMotion ? 'quest-day-glow 700ms ease-out' : 'none'
         }}
       >
         <Box
@@ -181,14 +223,12 @@ function DayCard({ day, dayNumber, index, selected, onClick }: {
             gap={5}
             mb={12}
           >
-            {day.parts.map((part) => (
-              <Box
+            {day.parts.map((part, partIndex) => (
+              <DayPip
                 key={part.questionId}
-                w={18}
-                h={9}
-                style={{
-                  borderRadius: 999, background: pipColor(part.status)
-                }}
+                status={part.status}
+                index={partIndex}
+                reducedMotion={reducedMotion}
               />
             ))}
           </Group>
@@ -464,6 +504,7 @@ function FarmOverview({ farm, monolith, onBack }: {
   const selectedDayIndex = Math.max(0, days.findIndex((day) => day.key === selectedDayKey));
   const selectedDay = days[selectedDayIndex] ?? days[0];
   const pct = farm.scorePercent ?? 0;
+  const animatedPct = useCountUp(pct);
 
   return (
     <Stack gap={26}>
@@ -577,14 +618,15 @@ function FarmOverview({ farm, monolith, onBack }: {
                   fw={800}
                   c="terracotta.7"
                 >
-                  {pct}%
+                  {animatedPct}%
                 </Text>
               </Group>
               <Progress
-                value={pct}
+                value={animatedPct}
                 color={pct >= 75 ? 'moss' : 'terracotta'}
                 size="md"
                 radius="xl"
+                transitionDuration={0}
               />
             </Stack>
           </Stack>
@@ -686,6 +728,7 @@ function FarmOverview({ farm, monolith, onBack }: {
 function FarmCard({ farm, onSelect }: { farm: FarmProgress; onSelect: () => void; }) {
   const { hovered, ref } = useHover<HTMLButtonElement>();
   const pct = farm.scorePercent ?? 0;
+  const animatedPct = useCountUp(pct);
 
   return (
     <UnstyledButton
@@ -772,14 +815,15 @@ function FarmCard({ farm, onSelect }: { farm: FarmProgress; onSelect: () => void
                 fw={800}
                 c={pct >= 75 ? 'moss.7' : 'terracotta.7'}
               >
-                {pct}%
+                {animatedPct}%
               </Text>
             </Group>
             <Progress
-              value={pct}
+              value={animatedPct}
               color={pct >= 75 ? 'moss' : 'terracotta'}
               size="md"
               radius="xl"
+              transitionDuration={0}
             />
           </Stack>
 
@@ -828,6 +872,7 @@ function Quests() {
   const seasonPercent = sortedFarms.length > 0
     ? Math.round(sortedFarms.reduce((sum, farm) => sum + (farm.scorePercent ?? 0), 0) / sortedFarms.length)
     : 0;
+  const animatedSeasonPercent = useCountUp(seasonPercent);
 
   // Same station index convention as FarmRoad's pins: i-th farm once sorted
   // by orderIndex maps to FARM_STATIONS[i].
@@ -942,14 +987,15 @@ function Quests() {
                   c="terracotta.7"
                   style={{ lineHeight: 1 }}
                 >
-                  {seasonPercent}%
+                  {animatedSeasonPercent}%
                 </Text>
                 <Progress
-                  value={seasonPercent}
+                  value={animatedSeasonPercent}
                   color="terracotta"
                   size="sm"
                   radius="xl"
                   mt={12}
+                  transitionDuration={0}
                 />
               </Paper>
             </Group>

@@ -81,22 +81,22 @@ const achievements: AchievementSeed[] = [
   },
   {
     title: 'Perfect Harvest',
-    description: 'Score 100% on any level.',
+    description: 'Score 100% on any quest.',
     criteriaCode: 'PERFECT_LEVEL'
   },
   {
     title: 'Rising Rank',
-    description: 'Advance to a new level.',
+    description: 'Advance to a new quest.',
     criteriaCode: 'LEVEL_UP'
   },
   {
     title: 'First Try Farmer',
-    description: 'Pass a level without retrying a single question.',
+    description: 'Pass a quest without retrying a single question.',
     criteriaCode: 'NO_RETRY_PASS'
   },
   {
     title: 'Master Farmer',
-    description: 'Complete every level.',
+    description: 'Complete every quest.',
     criteriaCode: 'MASTER_FARMER'
   }
 ];

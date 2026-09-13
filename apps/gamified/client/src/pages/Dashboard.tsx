@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Avatar, Box, Button, Group, Loader, Paper, Stack, Text, Title
 } from '@mantine/core';
+import { useReducedMotion } from '@mantine/hooks';
 import { LoadingPage } from '@shared/ui/LoadingPage';
+import { Icon } from '@shared/ui/Icon';
 import type { FarmProgress } from '@shared/api/models/farm.model';
 import type { Monolith, QuestionCategory } from '@shared/api/models/monolith.model';
 import type { Achievement } from '@shared/api/models/achievement.model';
@@ -53,15 +55,23 @@ const PIT_LAYERS: { category: QuestionCategory; soilColor: string; depth: string
 // Fixed slots for up to three farms, laid out on JourneyPanel's own mini
 // hill — same "recede up and to the right" arrangement as QuestScene's
 // FARM_STATIONS, just re-tuned for this smaller card's own proportions.
+//
+// JourneyPanel's Paper has no fixed height (overflow:hidden clips at
+// whatever height the title/subtitle + the h=190 hill Box add up to,
+// roughly 260px) — the third slot's avatar+label previously extended a few
+// px past that, getting clipped at the bottom. Moved all three up, and
+// gave the third one a slightly larger gap from the second (22 rather than
+// the even 20 between the first two) so it settles further into the
+// slope's curve instead of sitting high/detached from it.
 const JOURNEY_PINS: { xPct: number; yPct: number; }[] = [
   {
-    xPct: 17, yPct: 22
+    xPct: 17, yPct: 12
   },
   {
-    xPct: 46, yPct: 42
+    xPct: 46, yPct: 32
   },
   {
-    xPct: 75, yPct: 62
+    xPct: 75, yPct: 54
   }
 ];
 
@@ -552,6 +562,29 @@ function DashboardContent() {
   const weekStrip = WEEK_LABELS.map((label, index) => ({
     label, index, on: index >= 7 - Math.max(0, Math.min(7, streak))
   }));
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
+  // Plays once per Dashboard mount (i.e. every time this page is opened —
+  // React Router remounts it fresh on each navigation), as soon as real
+  // stats are available. Deliberately not "did the streak just transition"
+  // (useTransitionEffect's usual pattern): UserContext's stats are already
+  // cached from an earlier page by the time Dashboard mounts more often
+  // than not, so that transition (not-loaded -> loaded) would already be in
+  // the past and never observed here — a plain mount-guarded effect fires
+  // regardless of whether stats arrived before or after this component did.
+  const [streakFlickering, setStreakFlickering] = useState(false);
+  const hasPlayedStreakRef = useRef(false);
+  useEffect(() => {
+    if (hasPlayedStreakRef.current || !stats) return undefined;
+    hasPlayedStreakRef.current = true;
+    if (streak <= 0 || reducedMotion) return undefined;
+    // Deliberately a one-shot "play this once stats are ready" effect, not a
+    // transition/subscription — the ref guard above is what makes it safe
+    // (it can only ever set true once per mount, never cascade).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStreakFlickering(true);
+    const timer = setTimeout(() => setStreakFlickering(false), 500);
+    return () => clearTimeout(timer);
+  }, [stats, streak, reducedMotion]);
 
   const statTiles: StatTileDef[] = [
     {
@@ -668,7 +701,11 @@ function DashboardContent() {
                 fz={28}
                 fw={800}
                 c="terracotta.7"
-                style={{ lineHeight: 1 }}
+                style={{
+                  lineHeight: 1,
+                  display: 'inline-block',
+                  animation: streakFlickering && !reducedMotion ? 'quest-streak-flicker 500ms ease-out' : 'none'
+                }}
               >
                 {streak}
               </Text>
@@ -683,21 +720,39 @@ function DashboardContent() {
               </Text>
             </Group>
             <Group gap={7}>
-              {weekStrip.map((day) => (
+              {weekStrip.map((day, dayIndex) => (
                 <Stack
                   key={day.index}
                   gap={6}
                   align="center"
                 >
                   <Box
+                    pos="relative"
                     w={22}
                     h={30}
                     style={{
                       borderRadius: '8px 8px 11px 11px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       background: day.on ? 'var(--mantine-color-moss-5)' : 'var(--mantine-color-charcoal-1)',
                       boxShadow: day.on ? 'inset 0 -6px 0 rgba(86, 99, 63, 0.22)' : 'none'
                     }}
-                  />
+                  >
+                    {day.on && (
+                      <Icon
+                        name="Fire"
+                        size={13}
+                        weight="fill"
+                        color="#fff8f1"
+                        style={{
+                          animation: streakFlickering && !reducedMotion
+                            ? `quest-flame-pop 420ms ease-out ${dayIndex * 70}ms both`
+                            : 'none'
+                        }}
+                      />
+                    )}
+                  </Box>
                   <Text
                     fz={11}
                     fw={700}

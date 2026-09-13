@@ -10,15 +10,17 @@ export const HILL_PARALLAX_DISTANCE = 130;
 // Percentage positions sitting just above MountainBackground's road (the
 // front hill ellipse's own boundary, offset down slightly — see ROAD_CURVE
 // there), evenly spaced along x across the road's visible span (x=950..1600
-// of the 1600x900 viewBox). Keep in sync if that curve changes.
+// of the 1600x900 viewBox). Keep in sync if that curve changes — moved up
+// ~17 points from their original 71/75/81 to match the hill/road illustration
+// itself being moved up the same amount (see MountainBackground.tsx).
 export const ROAD_PIN_POSITIONS = [
   {
-    top: '71%', left: '66%'
+    top: '54%', left: '66%'
   },
   {
-    top: '75%', left: '78%'
+    top: '58%', left: '78%'
   },
   {
-    top: '81%', left: '91%'
+    top: '64%', left: '91%'
   }
 ];

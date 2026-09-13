@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   Avatar, Box, Button, Card, Flex, Group, Image, Loader, Modal, Paper, Progress, Radio, Stack, Text, Title, UnstyledButton
 } from '@mantine/core';
+import { useReducedMotion } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import confetti from 'canvas-confetti';
 import type { Achievement } from '@shared/api/models/achievement.model';
@@ -16,6 +18,8 @@ import { useMonoliths } from '../hooks/useMonoliths';
 import { categoryLabels } from '../lib/questionCategory';
 import { hasAttempted, hasFinished } from '../lib/questProgress';
 import MunsellChip from '../components/MunsellChip';
+import { useAnswerFeedback } from '../hooks/useAnswerFeedback';
+import { useTransitionEffect } from '../hooks/useTransitionEffect';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
@@ -77,6 +81,53 @@ function showAchievementUnlockToast(newlyUnlockedAchievements: Achievement[]) {
   });
 }
 
+// How long the anticipation beat plays before the existing toast fires —
+// long enough to read as "something's about to happen", short enough not to
+// delay the actual reveal into feeling sluggish.
+const ACHIEVEMENT_ANTICIPATION_MS = 340;
+
+// The brief "something's about to happen" beat shown just before the
+// achievement toast fires, in the same top-right corner the toast is about
+// to land in (see root.tsx's <Notifications position="top-right" />) — a
+// small trophy badge brightening in place, same gold as TrophyCase's earned
+// styling, that fades out right as the real toast takes over. Portaled to
+// document.body for the same reason StaticMountainScene is: escaping the
+// ScrollSmoother-transformed ancestor that would otherwise break
+// position:fixed.
+function AchievementGlowBeat() {
+  return createPortal(
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        // Mantine's Notifications container defaults to the "overlay" level
+        // (z-index 400) — this needs to sit clearly above it, not tie with
+        // it, so the beat is never left stacked under the toast that lands
+        // in the same corner moments later.
+        zIndex: 450,
+        width: 44,
+        height: 44,
+        borderRadius: 999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#e0b457',
+        animation: `quest-achievement-glow ${ACHIEVEMENT_ANTICIPATION_MS}ms ease-out`
+      }}
+    >
+      <Icon
+        name="Trophy"
+        weight="fill"
+        size={20}
+        color="#fff8f1"
+      />
+    </div>,
+    document.body
+  );
+}
+
 function FarmerPortrait({ farmerName, farmOrderIndex }: { farmerName: string; farmOrderIndex: number; }) {
   return (
     <Stack
@@ -121,6 +172,15 @@ function HorizonDetails({ horizon, revealLabel = true, revealCharacteristics = t
   revealLabel?: boolean;
   revealCharacteristics?: boolean;
 }) {
+  // A gated horizon's characteristics aren't rendered at all (the `&&` above
+  // short-circuits), so the stagger below can't leak anything through timing
+  // — there's simply nothing here to reveal until revealCharacteristics
+  // flips true on a later render.
+  // Read synchronously (not the default effect-deferred value) — this
+  // component mounts already-revealed in ExploreStep, so an effect-deferred
+  // read would let the stagger play once for a reduced-motion user before
+  // flipping off a render later.
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
   return (
     <Stack gap="xs">
       <Title order={4}>{horizon.label}</Title>
@@ -131,10 +191,14 @@ function HorizonDetails({ horizon, revealLabel = true, revealCharacteristics = t
         chroma={horizon.colourChroma}
         revealLabel={revealLabel}
       />
-      {revealCharacteristics && horizon.characteristics.map((characteristic) => (
+      {revealCharacteristics && horizon.characteristics.map((characteristic, index) => (
         <Text
           key={characteristic.id}
           size="sm"
+          style={reducedMotion ? undefined : {
+            animation: 'quest-feedback-rise 320ms ease-out both',
+            animationDelay: `${index * 90}ms`
+          }}
         >
           &bull; {characteristic.text}
         </Text>
@@ -497,6 +561,30 @@ const pipColor: Record<PipStatus, string> = {
   upcoming: 'var(--mantine-color-charcoal-3)'
 };
 
+// Only the current question's own pip ever transitions live within one
+// mounted QuestionScreen (submit flips it current -> correct/incorrect
+// without a remount) — every other pip in the row is fixed for the whole
+// mount, so this only ever fires for that one pip.
+function QuestionPip({ status, reducedMotion }: { status: PipStatus; reducedMotion: boolean; }) {
+  const justResolved = useTransitionEffect(
+    status,
+    (previous, next) => previous === 'current' && (next === 'correct' || next === 'incorrect'),
+    420
+  );
+  return (
+    <Box
+      w={status === 'current' ? 30 : 13}
+      h={13}
+      style={{
+        borderRadius: 999,
+        background: pipColor[status],
+        transition: 'width 300ms ease, background 300ms ease',
+        animation: justResolved && !reducedMotion ? 'quest-pip-fill 420ms ease-out' : 'none'
+      }}
+    />
+  );
+}
+
 function ProgressPips({ questions, currentQuestionId, currentRevealed, currentIsCorrect, farm }: {
   questions: Question[];
   currentQuestionId: number;
@@ -504,20 +592,16 @@ function ProgressPips({ questions, currentQuestionId, currentRevealed, currentIs
   currentIsCorrect: boolean;
   farm: FarmProgress;
 }) {
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
   return (
     <Group gap={7}>
       {questions.map((q) => {
         const status = pipStatusFor(q, q.id === currentQuestionId, currentRevealed, currentIsCorrect, farm);
         return (
-          <Box
+          <QuestionPip
             key={q.id}
-            w={status === 'current' ? 30 : 13}
-            h={13}
-            style={{
-              borderRadius: 999,
-              background: pipColor[status],
-              transition: 'width 300ms ease, background 300ms ease'
-            }}
+            status={status}
+            reducedMotion={reducedMotion}
           />
         );
       })}
@@ -555,6 +639,49 @@ interface QuestionScreenProps {
   onExit: () => void;
 }
 
+// Reserved space at the bottom of the question content so the fixed footer
+// bar below never covers the last option (or the review "You didn't answer
+// this question" note) — kept in one constant so the Box's own bottom
+// padding and the bar's height can never drift out of sync.
+const QUESTION_FOOTER_HEIGHT = 96;
+
+// The Submit/Next (and, in review, Previous) action row, fixed to the
+// bottom of the viewport regardless of how far the options above scroll.
+// Portaled to document.body rather than styled fixed in place: this
+// component renders inside Layout's #smooth-content, which GSAP
+// ScrollSmoother applies a CSS transform to in order to fake smooth
+// scrolling — and a transformed ancestor turns position:fixed descendants
+// into position:absolute relative to IT, not the real viewport (the same
+// reason StaticMountainScene/QuestScene/AchievementGlowBeat all portal out
+// to body instead of using an in-place fixed style).
+function QuestionFooterBar({ children }: { children: React.ReactNode; }) {
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        // Below Mantine's modal (200) and notification (400/450) layers, so
+        // SoilPitModal and any achievement toast still render on top of it,
+        // but above ordinary page content.
+        zIndex: 150,
+        background: '#fdf8ee',
+        borderTop: '1px solid var(--mantine-color-charcoal-2)',
+        boxShadow: '0 -8px 24px rgba(86, 66, 40, 0.08)'
+      }}
+    >
+      <Box
+        px="xl"
+        py="md"
+      >
+        {children}
+      </Box>
+    </div>,
+    document.body
+  );
+}
+
 function QuestionScreen({
   farm, monolith, question, stepIndex, sameCategoryQuestions, selectedOptionId, onSelect, revealed, submitting,
   isReview, unanswered, farmerName, farmOrderIndex, onSubmit, onNext, onPrevious, canGoPrevious, onExit
@@ -563,6 +690,7 @@ function QuestionScreen({
   // new step (its own key includes stepIndex).
   const [activeHorizonId, setActiveHorizonId] = useState<number | null>(null);
   const [pitOpened, setPitOpened] = useState(false);
+  const feedback = useAnswerFeedback();
 
   // Only set for a horizon-linked question (Question.horizonId) — undefined
   // for every other question type.
@@ -581,7 +709,6 @@ function QuestionScreen({
   const hideCharacteristicsForHorizonId = !revealed && isCharacteristicQuestion ? question.horizonId : null;
 
   const selectedOption = question.options.find((option) => String(option.id) === selectedOptionId);
-  const correctOption = question.options.find((option) => option.isCorrect);
   const answeredCorrectly = !!selectedOption?.isCorrect;
   const showFeedback = revealed && !unanswered;
 
@@ -589,7 +716,7 @@ function QuestionScreen({
     <Box
       mih="100dvh"
       pt={90}
-      pb={80}
+      pb={QUESTION_FOOTER_HEIGHT}
       px="xl"
       style={{ boxSizing: 'border-box' }}
     >
@@ -718,17 +845,25 @@ function QuestionScreen({
                 const borderColor = optionBorderColor(option, revealed, selectedOptionId);
                 const isSelected = String(option.id) === selectedOptionId;
                 const isCorrectOption = revealed && option.isCorrect;
+                // Review mounts a question already-revealed, replaying an
+                // answer from a previous pass — the wobble is a reaction to
+                // the moment of answering, not something a read-only replay
+                // of an old wrong pick should play on every mount.
+                const isWrongSelected = !isReview && revealed && isSelected && !option.isCorrect;
                 // Once revealed, every option except the selected one and
                 // the correct one (the two the outline colour already
                 // marks up) fades back so the two that matter stand out.
                 const dimmed = revealed && !borderColor;
+                const optionAnimation = isCorrectOption
+                  ? feedback.correctOptionAnimation()
+                  : isWrongSelected ? feedback.wrongOptionAnimation() : undefined;
                 return (
                   <Radio.Card
                     key={option.id}
                     value={String(option.id)}
                     radius="xl"
                     p="md"
-                    className={`quest-option-row${isCorrectOption ? ' quest-option-correct' : ''}`}
+                    className="quest-option-row"
                     bg="#fdf8ee"
                     style={{
                       // `unanswered` only happens in review, where there's
@@ -739,7 +874,7 @@ function QuestionScreen({
                         : isSelected ? '3px solid var(--mantine-color-terracotta-6)' : '3px solid transparent',
                       boxShadow: isSelected || isCorrectOption ? 'var(--mantine-shadow-md)' : 'var(--mantine-shadow-xs)',
                       opacity: dimmed ? 0.55 : 1,
-                      animation: isCorrectOption ? 'quest-option-pop 420ms ease-out' : 'none'
+                      animation: optionAnimation ?? 'none'
                     }}
                   >
                     <Group wrap="nowrap">
@@ -794,7 +929,7 @@ function QuestionScreen({
               flex: '1 1 220px',
               maxWidth: 320,
               border: `2px solid ${answeredCorrectly ? '#cadfae' : '#f3d3ba'}`,
-              animation: 'quest-feedback-rise 360ms cubic-bezier(0.22, 0.72, 0.15, 1)'
+              animation: feedback.feedbackPanelAnimation() ?? 'none'
             }}
           >
             <Group
@@ -816,62 +951,50 @@ function QuestionScreen({
                 >
                   {answeredCorrectly ? 'That is the one.' : 'Not quite.'}
                 </Text>
-                {/* No stored rationale/explanation text exists on Question
-                    anywhere in the schema, so this stays to the one thing
-                    we do have real data for: which option was right. */}
-                {!answeredCorrectly && correctOption && (
-                  <Text
-                    fz="sm"
-                    c="charcoal.7"
-                  >
-                    The correct answer: {correctOption.text}
-                  </Text>
-                )}
               </Stack>
             </Group>
           </Paper>
         )}
       </Flex>
 
-      <Group
-        justify="space-between"
-        mt="xl"
-      >
-        {isReview && canGoPrevious ? (
-          <Button
-            variant="light"
-            color="charcoal"
-            radius="xl"
-            onClick={onPrevious}
-          >
-            Previous
-          </Button>
-        ) : <div />}
+      <QuestionFooterBar>
+        <Group justify="space-between">
+          {isReview && canGoPrevious ? (
+            <Button
+              variant="light"
+              color="charcoal"
+              radius="xl"
+              onClick={onPrevious}
+            >
+              Previous
+            </Button>
+          ) : <div />}
 
-        {/* Once an answer is revealed — right or wrong — the only way
-            forward is Next: a wrong answer already shows the correct one
-            above, in place, with no separate retry step. */}
-        {(isReview || revealed) && (
-          <Button
-            color="terracotta"
-            radius="xl"
-            onClick={onNext}
-          >
-            Next
-          </Button>
-        )}
-        {!isReview && !revealed && (
-          <Button
-            color="terracotta"
-            radius="xl"
-            loading={submitting}
-            disabled={!selectedOptionId}
-            onClick={onSubmit}
-          >
-            Submit Answer
-          </Button>
-        )}
-      </Group>
+          {/* Once an answer is revealed — right or wrong — the only way
+              forward is Next: a wrong answer already shows the correct one
+              above, in place, with no separate retry step. */}
+          {(isReview || revealed) && (
+            <Button
+              color="terracotta"
+              radius="xl"
+              onClick={onNext}
+            >
+              Next
+            </Button>
+          )}
+          {!isReview && !revealed && (
+            <Button
+              color="terracotta"
+              radius="xl"
+              loading={submitting}
+              disabled={!selectedOptionId}
+              onClick={onSubmit}
+            >
+              Submit Answer
+            </Button>
+          )}
+        </Group>
+      </QuestionFooterBar>
     </Box>
   );
 }
@@ -1119,6 +1242,29 @@ function QuestRunnerInner({
   );
   const [revealed, setRevealed] = useState(storedOptionId != null);
   const [submitting, setSubmitting] = useState(false);
+  const [celebratingAchievement, setCelebratingAchievement] = useState(false);
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
+  const celebrationTimeoutRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (celebrationTimeoutRef.current != null) window.clearTimeout(celebrationTimeoutRef.current);
+  }, []);
+
+  // Doesn't change when an unlock is triggered (still fires right off the
+  // submit response) — only adds a brief glow beat before the existing
+  // toast, unless reduced motion is set, in which case the toast fires with
+  // no beat at all.
+  function celebrateAchievementUnlock(newlyUnlockedAchievements: Achievement[]) {
+    if (newlyUnlockedAchievements.length === 0) return;
+    if (reducedMotion) {
+      showAchievementUnlockToast(newlyUnlockedAchievements);
+      return;
+    }
+    setCelebratingAchievement(true);
+    celebrationTimeoutRef.current = window.setTimeout(() => {
+      setCelebratingAchievement(false);
+      showAchievementUnlockToast(newlyUnlockedAchievements);
+    }, ACHIEVEMENT_ANTICIPATION_MS);
+  }
 
   // Timestamp the current question was first shown, used as the attempt's
   // startedAt so time-on-task reflects real elapsed time rather than the
@@ -1186,7 +1332,7 @@ function QuestRunnerInner({
       if (!session) throw new Error('Not authenticated');
       const result = await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId), questionShownAt);
       setRevealed(true);
-      showAchievementUnlockToast(result.newlyUnlockedAchievements);
+      celebrateAchievementUnlock(result.newlyUnlockedAchievements);
     } catch (submitError) {
       console.error('Failed to submit attempt', submitError);
       notifications.show({
@@ -1207,105 +1353,111 @@ function QuestRunnerInner({
   // ScrollSmoother) when content runs taller than the viewport.
   if (!isComplete && phase === 'question' && question) {
     return (
-      <QuestionScreen
-        farm={farm}
-        monolith={monolith}
-        question={question}
-        stepIndex={stepIndex}
-        sameCategoryQuestions={sameCategoryQuestions}
-        selectedOptionId={selectedOptionId}
-        onSelect={setSelectedOptionId}
-        revealed={revealed}
-        submitting={submitting}
-        isReview={isReview}
-        unanswered={isReview && storedOptionId === null}
-        farmerName={farmerName}
-        farmOrderIndex={farmOrderIndex}
-        onSubmit={handleSubmitAnswer}
-        onNext={() => goToStep(stepIndex + 1)}
-        onPrevious={() => goToStep(stepIndex - 1)}
-        canGoPrevious={stepIndex > 0}
-        onExit={() => navigate('/quests')}
-      />
+      <>
+        {celebratingAchievement && <AchievementGlowBeat />}
+        <QuestionScreen
+          farm={farm}
+          monolith={monolith}
+          question={question}
+          stepIndex={stepIndex}
+          sameCategoryQuestions={sameCategoryQuestions}
+          selectedOptionId={selectedOptionId}
+          onSelect={setSelectedOptionId}
+          revealed={revealed}
+          submitting={submitting}
+          isReview={isReview}
+          unanswered={isReview && storedOptionId === null}
+          farmerName={farmerName}
+          farmOrderIndex={farmOrderIndex}
+          onSubmit={handleSubmitAnswer}
+          onNext={() => goToStep(stepIndex + 1)}
+          onPrevious={() => goToStep(stepIndex - 1)}
+          canGoPrevious={stepIndex > 0}
+          onExit={() => navigate('/quests')}
+        />
+      </>
     );
   }
 
   return (
-    <Box
-      px="xl"
-      pt={90}
-      pb={80}
-      maw={900}
-      mx="auto"
-    >
-      <Stack gap="xl">
-        <Stack gap={6}>
-          <Text
-            fz={13}
-            fw={800}
-            c="terracotta.8"
-            tt="uppercase"
-            style={{ letterSpacing: '0.08em' }}
-          >
-            {farmName} &bull; {farmerName}
-          </Text>
-          <Title
-            order={1}
-            c="charcoal.9"
-            fz={{
-              base: 26, sm: 34
-            }}
-          >
-            {isComplete ? 'Day Complete' : `Day ${stepIndex + 1} — ${categoryHeading}`}
-            {isReview && ' — Review'}
-          </Title>
-        </Stack>
-
-        {isComplete && scoreLoading && (
-          <Stack
-            align="center"
-            py="xl"
-          >
-            <Loader color="terracotta" />
+    <>
+      {celebratingAchievement && <AchievementGlowBeat />}
+      <Box
+        px="xl"
+        pt={90}
+        pb={80}
+        maw={900}
+        mx="auto"
+      >
+        <Stack gap="xl">
+          <Stack gap={6}>
+            <Text
+              fz={13}
+              fw={800}
+              c="terracotta.8"
+              tt="uppercase"
+              style={{ letterSpacing: '0.08em' }}
+            >
+              {farmName} &bull; {farmerName}
+            </Text>
+            <Title
+              order={1}
+              c="charcoal.9"
+              fz={{
+                base: 26, sm: 34
+              }}
+            >
+              {isComplete ? 'Day Complete' : `Day ${stepIndex + 1} — ${categoryHeading}`}
+              {isReview && ' — Review'}
+            </Title>
           </Stack>
-        )}
-        {isComplete && !scoreLoading && (
-          <CompletionStep
-            farmerName={farmerName}
-            farmOrderIndex={farmOrderIndex}
-            farmName={farmName}
-            correctCount={correctCount}
-            total={total}
-            continueLabel={nextFarm ? 'Next Quest' : 'Back to Quests'}
-            onContinue={() => navigate(nextFarm ? `/quests/${nextFarm.id}/0` : '/quests')}
-            onRetry={startRetry}
-            onReview={startReview}
-          />
-        )}
-        {!isComplete && phase === 'intro' && (
-          <IntroStep
-            farmerName={farmerName}
-            farmOrderIndex={farmOrderIndex}
-            description={farm.description}
-            message={farm.scenario}
-            startLabel={attempted ? 'Retry Quest' : 'Start Quest'}
-            onContinue={() => setPhase('explore')}
-            onReview={finished ? startReview : undefined}
-          />
-        )}
-        {!isComplete && phase === 'explore' && (
-          <ExploreStep
-            monolith={monolith}
-            // Linked straight here from the Quests dropdown, this is a
-            // read-the-profile visit, not the middle of a run — walking on
-            // into the questions would start recording a new attempt the user
-            // never asked for. Send them back instead.
-            continueLabel={linkedToProfile ? 'Back to Quests' : 'Continue'}
-            onContinue={() => (linkedToProfile ? navigate('/quests') : setPhase('question'))}
-          />
-        )}
-      </Stack>
-    </Box>
+
+          {isComplete && scoreLoading && (
+            <Stack
+              align="center"
+              py="xl"
+            >
+              <Loader color="terracotta" />
+            </Stack>
+          )}
+          {isComplete && !scoreLoading && (
+            <CompletionStep
+              farmerName={farmerName}
+              farmOrderIndex={farmOrderIndex}
+              farmName={farmName}
+              correctCount={correctCount}
+              total={total}
+              continueLabel={nextFarm ? 'Next Quest' : 'Back to Quests'}
+              onContinue={() => navigate(nextFarm ? `/quests/${nextFarm.id}/0` : '/quests')}
+              onRetry={startRetry}
+              onReview={startReview}
+            />
+          )}
+          {!isComplete && phase === 'intro' && (
+            <IntroStep
+              farmerName={farmerName}
+              farmOrderIndex={farmOrderIndex}
+              description={farm.description}
+              message={farm.scenario}
+              startLabel={attempted ? 'Retry Quest' : 'Start Quest'}
+              onContinue={() => setPhase('explore')}
+              onReview={finished ? startReview : undefined}
+            />
+          )}
+          {!isComplete && phase === 'explore' && (
+            <ExploreStep
+              monolith={monolith}
+              // Linked straight here from the Quests dropdown, this is a
+              // read-the-profile visit, not the middle of a run — walking on
+              // into the questions would start recording a new attempt the user
+              // never asked for. Send them back instead.
+              continueLabel={linkedToProfile ? 'Back to Quests' : 'Continue'}
+              onContinue={() => (linkedToProfile ? navigate('/quests') : setPhase('question'))}
+            />
+          )}
+        </Stack>
+      </Box>
+    </>
   );
 }
 
