@@ -8,11 +8,17 @@ import { userApi } from '@shared/api/services/users.api';
 import type { User } from '@shared/api/models/user.model';
 import type { UserStats } from '@shared/api/models/user-stats.model';
 import type { FarmProgress } from '@shared/api/models/farm.model';
+import type { Achievement } from '@shared/api/models/achievement.model';
+import { FALLBACK_FARMS } from '../lib/fallbackQuestData';
 
 interface UserContextValue {
   user: User | null;
   stats: UserStats | null;
   farms: FarmProgress[] | null;
+  // Empty rather than null while loading/unavailable — unlike stats/farms,
+  // nothing in the app needs to distinguish "not loaded yet" from "none
+  // earned", so callers can render it directly without a null check.
+  achievements: Achievement[];
   loading: boolean;
   // Merges a partial update (e.g. after a Profile-page save) into the cached
   // user without a full re-sync, so every consumer (nav avatar, hero, Profile
@@ -27,23 +33,38 @@ interface UserContextValue {
 
 const userContext = createContext<UserContextValue | undefined>(undefined);
 
+// Bump this whenever a cached model's shape changes in a breaking way (e.g.
+// a new required field on UserStats). A stale cached object from a previous
+// session render synchronously on mount, before the fresh fetch resolves —
+// without this, a shape mismatch (like categoryAccuracy being undefined on
+// an old cached UserStats) crashes the page instead of just falling through
+// to a fresh fetch. Old-versioned keys are simply orphaned, not migrated.
+const CACHE_VERSION = 'v2';
+
+function cacheKey(kind: 'user' | 'stats' | 'farms' | 'achievements', supabaseId: string) {
+  return `gamified:${CACHE_VERSION}:${kind}:${supabaseId}`;
+}
+
 function userCacheKey(supabaseId: string) {
-  return `gamified:user:${supabaseId}`;
+  return cacheKey('user', supabaseId);
 }
 
 function statsCacheKey(supabaseId: string) {
-  return `gamified:stats:${supabaseId}`;
+  return cacheKey('stats', supabaseId);
 }
 
 function farmsCacheKey(supabaseId: string) {
-  return `gamified:farms:${supabaseId}`;
+  return cacheKey('farms', supabaseId);
+}
+
+function achievementsCacheKey(supabaseId: string) {
+  return cacheKey('achievements', supabaseId);
 }
 
 function clearUserCache() {
+  const prefix = `gamified:${CACHE_VERSION}:`;
   Object.keys(sessionStorage)
-    .filter((key) => key.startsWith('gamified:user:')
-      || key.startsWith('gamified:stats:')
-      || key.startsWith('gamified:farms:'))
+    .filter((key) => key.startsWith(prefix))
     .forEach((key) => sessionStorage.removeItem(key));
 }
 
@@ -51,6 +72,7 @@ export function UserProvider({ children }: { children: ReactNode; }) {
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [farms, setFarms] = useState<FarmProgress[] | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,6 +87,9 @@ export function UserProvider({ children }: { children: ReactNode; }) {
 
       const cachedFarms = sessionStorage.getItem(farmsCacheKey(supabaseId));
       if (cachedFarms) setFarms(JSON.parse(cachedFarms) as FarmProgress[]);
+
+      const cachedAchievements = sessionStorage.getItem(achievementsCacheKey(supabaseId));
+      if (cachedAchievements) setAchievements(JSON.parse(cachedAchievements) as Achievement[]);
 
       if (cachedUser || cachedStats || cachedFarms) setLoading(false);
 
@@ -110,8 +135,23 @@ export function UserProvider({ children }: { children: ReactNode; }) {
             setFarms(freshFarms);
             sessionStorage.setItem(farmsCacheKey(supabaseId), JSON.stringify(freshFarms));
           })
-          .catch((error: unknown) => console.error('Failed to load farms', error))
+          .catch((error: unknown) => console.error('Failed to load farms', error)),
+        userApi.getMyAchievements(accessToken)
+          .then((freshAchievements) => {
+            if (cancelled) return;
+            setAchievements(freshAchievements);
+            sessionStorage.setItem(achievementsCacheKey(supabaseId), JSON.stringify(freshAchievements));
+          })
+          .catch((error: unknown) => console.error('Failed to load achievements', error))
       ]);
+
+      // Dev-only: if the backend never returned real farms (e.g. it's down
+      // locally), fall back to placeholder data so the UI — including
+      // navigating into a quest — stays testable without a working server.
+      // Never runs in production builds.
+      if (import.meta.env.DEV && !cancelled) {
+        setFarms((prev) => prev ?? FALLBACK_FARMS);
+      }
     };
 
     authApi.getSession().then((session) => {
@@ -128,6 +168,7 @@ export function UserProvider({ children }: { children: ReactNode; }) {
         setUser(null);
         setStats(null);
         setFarms(null);
+        setAchievements([]);
         setLoading(false);
         return;
       }
@@ -165,7 +206,7 @@ export function UserProvider({ children }: { children: ReactNode; }) {
 
   return (
     <userContext.Provider value={{
-      user, stats, farms, loading, updateUser, refreshFarms
+      user, stats, farms, achievements, loading, updateUser, refreshFarms
     }}
     >
       {children}

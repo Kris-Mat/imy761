@@ -7,23 +7,20 @@
 // stay visually locked onto the road drawn on the hill.
 export const HILL_PARALLAX_DISTANCE = 130;
 
-// Static downward shift (SVG units, out of the 900-tall viewBox) applied to
-// the whole hill+road+icons group. Purely a vertical nudge — doesn't affect
-// the shapes themselves.
-export const HILL_VERTICAL_OFFSET = 40;
-
-// Percentage positions sitting above the road drawn in MountainBackground
-// (ROAD_CURVE + ROAD_OFFSET + HILL_VERTICAL_OFFSET), evenly spaced along x,
-// starting only once the road itself starts (past the hero text column).
-// Keep in sync if that curve changes.
+// Percentage positions sitting just above MountainBackground's road (the
+// front hill ellipse's own boundary, offset down slightly — see ROAD_CURVE
+// there), evenly spaced along x across the road's visible span (x=950..1600
+// of the 1600x900 viewBox). Keep in sync if that curve changes — moved up
+// ~17 points from their original 71/75/81 to match the hill/road illustration
+// itself being moved up the same amount (see MountainBackground.tsx).
 export const ROAD_PIN_POSITIONS = [
   {
-    top: '36%', left: '56%'
+    top: '54%', left: '66%'
   },
   {
-    top: '51%', left: '74%'
+    top: '58%', left: '78%'
   },
   {
-    top: '55%', left: '92%'
+    top: '64%', left: '91%'
   }
 ];

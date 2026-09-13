@@ -13,20 +13,6 @@ interface FarmRoadProps {
   heroSectionRef: React.RefObject<HTMLDivElement | null>;
 }
 
-// Stand-in so the road has pins to show while /users/me/farms is 500ing —
-// remove once the backend sync issue is fixed.
-const FALLBACK_FARMS: FarmProgress[] = [
-  {
-    id: -1, name: 'Redridge Farm', farmerName: 'Pieter', orderIndex: 1, visited: true, completed: true, scorePercent: 82, questions: []
-  },
-  {
-    id: -2, name: 'Green Valley Farm', farmerName: 'Nomsa', orderIndex: 2, visited: false, completed: false, scorePercent: null, questions: []
-  },
-  {
-    id: -3, name: 'Sunrise Farm', farmerName: 'Willem', orderIndex: 3, visited: false, completed: false, scorePercent: null, questions: []
-  }
-];
-
 // Keyed by orderIndex (levelNumber) — the portrait is a presentation
 // concern, not something the API needs to know about.
 const farmerImages: Record<number, string> = {
@@ -49,8 +35,7 @@ function FarmRoad({ farms, heroSectionRef }: FarmRoadProps) {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const effectiveFarms = farms.length > 0 ? farms : FALLBACK_FARMS;
-  const pins = effectiveFarms.slice(0, ROAD_PIN_POSITIONS.length).map((farm, i) => ({
+  const pins = farms.slice(0, ROAD_PIN_POSITIONS.length).map((farm, i) => ({
     ...farm, ...ROAD_PIN_POSITIONS[i]
   }));
 

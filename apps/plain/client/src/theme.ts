@@ -1,7 +1,7 @@
 import { createTheme } from '@mantine/core';
 
 // Global colour scheme, shared with the gamified app: rust/terracotta, mustard-gold,
-// olive-moss, and charcoal. Import `theme` anywhere via `import { theme } from
+// olive-moss, charcoal, and sky. Import `theme` anywhere via `import { theme } from
 // '@plain-client/theme'` if you need a raw value; every Mantine component already
 // inherits it through the single <MantineProvider> in src/root.tsx, so
 // `color="terracotta"` etc. just works.
@@ -23,6 +23,10 @@ export const theme = createTheme({
     charcoal: [
       '#eef0f2', '#d4d8dd', '#b3bac2', '#8f99a4', '#6b7783',
       '#4d5762', '#3a424c', '#2b2f3a', '#1f232b', '#14171c'
+    ],
+    sky: [
+      '#edf9fb', '#d9f1f4', '#bce6ec', '#9edae2', '#82ced9',
+      '#68c1cf', '#57adbc', '#4693a1', '#397684', '#2c5a64'
     ]
   }
 });

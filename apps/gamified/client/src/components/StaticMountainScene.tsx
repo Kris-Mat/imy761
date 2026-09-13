@@ -1,11 +1,20 @@
 import { createPortal } from 'react-dom';
 import {
-  FAR_MOUNTAINS_PATH, FRONT_CHARCOAL_PATH, HILL_CURVE, MID_MOUNTAINS_PATH
-} from '../lib/hillShapes';
-import { HILL_VERTICAL_OFFSET } from '../lib/heroParallax';
+  FAR_HILL, FRONT_HILL, MID_HILL, SKY_GRADIENT, type HillCircle
+} from '../lib/hillGeometry';
 
-// Same sky/mountains/hill/charcoal scene as MountainBackground on Home, but
-// with no scroll-parallax and no road/pins — a plain static backdrop.
+function Hill({ hill }: { hill: HillCircle; }) {
+  return (
+    <div
+      style={{
+        position: 'absolute', left: hill.left, right: hill.right, bottom: hill.bottom, height: hill.height, borderRadius: '50%', background: hill.color
+      }}
+    />
+  );
+}
+
+// Same warm backdrop as the Quests redesign mockup (see lib/hillGeometry.ts)
+// — no scroll-parallax, no camera pan, just the static scene.
 //
 // Rendered via a portal straight into document.body: Layout's ScrollSmoother
 // applies a CSS transform to #smooth-content to fake smooth scrolling, and a
@@ -15,38 +24,16 @@ import { HILL_VERTICAL_OFFSET } from '../lib/heroParallax';
 // to body sidesteps that entirely.
 function StaticMountainScene() {
   return createPortal(
-    <svg
-      viewBox="0 0 1600 900"
-      preserveAspectRatio="xMidYMax slice"
+    <div
       aria-hidden="true"
       style={{
-        position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1
+        position: 'fixed', inset: 0, zIndex: -1, overflow: 'hidden', background: SKY_GRADIENT
       }}
     >
-      <rect
-        width={1600}
-        height={900}
-        fill="var(--mantine-color-sky-0)"
-      />
-      <path
-        d={FAR_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-1)"
-      />
-      <path
-        d={MID_MOUNTAINS_PATH}
-        fill="var(--mantine-color-moss-2)"
-      />
-      <g transform={`translate(0, ${HILL_VERTICAL_OFFSET})`}>
-        <path
-          d={`${HILL_CURVE} L1600,900 L0,900 Z`}
-          fill="var(--mantine-color-moss-4)"
-        />
-      </g>
-      <path
-        d={FRONT_CHARCOAL_PATH}
-        fill="var(--mantine-color-charcoal-5)"
-      />
-    </svg>,
+      <Hill hill={FAR_HILL} />
+      <Hill hill={MID_HILL} />
+      <Hill hill={FRONT_HILL} />
+    </div>,
     document.body
   );
 }

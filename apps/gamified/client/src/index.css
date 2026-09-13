@@ -16,3 +16,224 @@ body {
     transform: translate(-50%, -50%) scale(1.3);
   }
 }
+
+@keyframes quest-flag-wave {
+  0%, 100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-6px);
+  }
+}
+
+@keyframes quest-flag-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(201, 96, 63, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(201, 96, 63, 0);
+  }
+}
+
+@keyframes quest-cloud-drift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(90px);
+  }
+}
+
+@keyframes dashboard-pin-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes quest-option-pop {
+  0% {
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes quest-feedback-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Colour bloom paired with quest-option-pop on the option revealed correct —
+   an expanding, fading ring in the same green optionBorderColor() already
+   uses for a correct outline, so the two read as one effect. */
+@keyframes quest-option-bloom {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 142, 60, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(56, 142, 60, 0);
+  }
+}
+
+/* Small, contained wobble for the single wrong option the user picked — a
+   few px of horizontal offset settling back to rest, never touching layout
+   (no width/margin change) so it can't nudge neighbouring rows. */
+@keyframes quest-option-wobble {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* A day-strip pip filling in (Quests.tsx's DayCard, and QuestRunner's
+   in-question ProgressPips) — a brief scale bump on top of the plain
+   background-color transition already set inline, so a pip resolving reads
+   as a small "fill" event rather than a static recolor. */
+@keyframes quest-pip-fill {
+  0% {
+    transform: scaleY(1);
+  }
+  45% {
+    transform: scaleY(1.4);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* A day card settling from active to done — the same moss/success green as
+   quest-option-bloom, expanding and fading before the card's normal resting
+   shadow (set inline, per selected/hovered state) takes back over. */
+@keyframes quest-day-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 142, 60, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 22px rgba(56, 142, 60, 0);
+  }
+}
+
+/* Streak number ticking up — a quick flicker/pop, not a full digit-roll,
+   since the value is shown as plain text rather than individual digit
+   slots. */
+/* The flame icon dropping into each streak-day box in Dashboard's week
+   strip — pops in with a small scale/opacity overshoot rather than just
+   appearing, staggered per-day so the row reads left-to-right instead of
+   flashing in all at once. */
+@keyframes quest-flame-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) translateY(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* The anticipation beat shown just before an achievement's existing toast
+   fires — a brief brighten-and-settle on a small trophy badge, same gold as
+   TrophyCase's earned styling, in the corner the real toast is about to
+   land (top-right, matching root.tsx's <Notifications position="top-right"/>). */
+@keyframes quest-achievement-glow {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(224, 180, 87, 0.65);
+  }
+  45% {
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 0 0 0 16px rgba(224, 180, 87, 0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+    box-shadow: 0 0 0 16px rgba(224, 180, 87, 0);
+  }
+}
+
+@keyframes quest-streak-flicker {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.22);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* The option row's own hover nudge — inert once QuestionScreen sets
+   pointer-events:none on a revealed/unanswered row, since a element that
+   can't receive pointer events can't trigger :hover either. */
+.quest-option-row {
+  transition: transform 160ms ease, filter 160ms ease, background 200ms ease, outline-color 200ms ease, opacity 200ms ease;
+}
+.quest-option-row:hover {
+  transform: translateX(4px);
+  filter: brightness(1.02);
+}
+
+/* Soil pit bands use box-shadow (not filter) for hover, so it never fights
+   the inline filter that marks the tapped/active band. */
+.quest-pit-band {
+  transition: box-shadow 150ms ease;
+}
+.quest-pit-band:hover {
+  box-shadow: inset 0 0 0 3px rgba(255, 248, 241, 0.7);
+}
+
+/* The Quests page's day-strip scrollbar, themed to match the app instead of
+   the plain system scrollbar (grey track, square arrow buttons). Webkit-only
+   (Chrome/Edge/Safari) — Firefox falls back to its own thin `scrollbar-color`
+   styling below, which can't match this exactly but stays unobtrusive. */
+.quest-day-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mantine-color-charcoal-4) transparent;
+}
+.quest-day-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.quest-day-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.quest-day-scroll::-webkit-scrollbar-track {
+  background: var(--mantine-color-charcoal-1);
+  border-radius: 999px;
+}
+.quest-day-scroll::-webkit-scrollbar-thumb {
+  background: var(--mantine-color-charcoal-4);
+  border-radius: 999px;
+}
+.quest-day-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--mantine-color-charcoal-5);
+}

@@ -83,6 +83,44 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"QuestionCategory": {
+				"type": "string",
+				"enum": [
+					"DIAGNOSTIC_HORIZONS",
+					"SOIL_FORM",
+					"SOIL_FAMILY_CODE",
+					"LANDSCAPE_POSITION",
+					"SUITABILITY"
+				]
+			},
+			"CategoryAccuracy": {
+				"properties": {
+					"category": {
+						"$ref": "#/components/schemas/QuestionCategory"
+					},
+					"correct": {
+						"type": "number",
+						"format": "double"
+					},
+					"attempted": {
+						"type": "number",
+						"format": "double"
+					},
+					"accuracyPercent": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					}
+				},
+				"required": [
+					"category",
+					"correct",
+					"attempted",
+					"accuracyPercent"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"UserStats": {
 				"properties": {
 					"totalXp": {
@@ -108,6 +146,12 @@
 					"badgesEarned": {
 						"type": "number",
 						"format": "double"
+					},
+					"categoryAccuracy": {
+						"items": {
+							"$ref": "#/components/schemas/CategoryAccuracy"
+						},
+						"type": "array"
 					}
 				},
 				"required": [
@@ -116,7 +160,8 @@
 					"tasksCompleted",
 					"correctAnswers",
 					"currentStreak",
-					"badgesEarned"
+					"badgesEarned",
+					"categoryAccuracy"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -157,6 +202,12 @@
 					"farmerName": {
 						"type": "string"
 					},
+					"description": {
+						"type": "string"
+					},
+					"scenario": {
+						"type": "string"
+					},
 					"orderIndex": {
 						"type": "number",
 						"format": "double"
@@ -183,11 +234,43 @@
 					"id",
 					"name",
 					"farmerName",
+					"description",
+					"scenario",
 					"orderIndex",
 					"visited",
 					"completed",
 					"scorePercent",
 					"questions"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Achievement": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"title": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"earned": {
+						"type": "boolean"
+					},
+					"earnedAt": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"title",
+					"description",
+					"earned",
+					"earnedAt"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -234,10 +317,21 @@
 				"properties": {
 					"isCorrect": {
 						"type": "boolean"
+					},
+					"leveledUp": {
+						"type": "boolean"
+					},
+					"newlyUnlockedAchievements": {
+						"items": {
+							"$ref": "#/components/schemas/Achievement"
+						},
+						"type": "array"
 					}
 				},
 				"required": [
-					"isCorrect"
+					"isCorrect",
+					"leveledUp",
+					"newlyUnlockedAchievements"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -251,11 +345,92 @@
 					"selectedOptionId": {
 						"type": "number",
 						"format": "double"
+					},
+					"questionShownAt": {
+						"type": "string"
 					}
 				},
 				"required": [
 					"questionId",
-					"selectedOptionId"
+					"selectedOptionId",
+					"questionShownAt"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"StudentQuestionStat": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"category": {
+						"$ref": "#/components/schemas/QuestionCategory"
+					},
+					"prompt": {
+						"type": "string"
+					},
+					"attempts": {
+						"type": "number",
+						"format": "double"
+					},
+					"retryCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"correct": {
+						"type": "boolean"
+					},
+					"timeTakenSeconds": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					}
+				},
+				"required": [
+					"questionId",
+					"category",
+					"prompt",
+					"attempts",
+					"retryCount",
+					"correct",
+					"timeTakenSeconds"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"StudentAnalytics": {
+				"properties": {
+					"userId": {
+						"type": "number",
+						"format": "double"
+					},
+					"username": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"firstName": {
+						"type": "string"
+					},
+					"lastName": {
+						"type": "string"
+					},
+					"questions": {
+						"items": {
+							"$ref": "#/components/schemas/StudentQuestionStat"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"userId",
+					"username",
+					"email",
+					"firstName",
+					"lastName",
+					"questions"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -329,15 +504,6 @@
 				"type": "object",
 				"additionalProperties": false
 			},
-			"QuestionCategory": {
-				"type": "string",
-				"enum": [
-					"DIAGNOSTIC_HORIZONS",
-					"SOIL_FORM",
-					"LANDSCAPE_POSITION",
-					"SUITABILITY"
-				]
-			},
 			"AnswerOption": {
 				"properties": {
 					"id": {
@@ -385,6 +551,11 @@
 							"$ref": "#/components/schemas/AnswerOption"
 						},
 						"type": "array"
+					},
+					"horizonId": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
 					}
 				},
 				"required": [
@@ -392,7 +563,8 @@
 					"category",
 					"orderIndex",
 					"prompt",
-					"options"
+					"options",
+					"horizonId"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -620,6 +792,32 @@
 				"parameters": []
 			}
 		},
+		"/users/me/achievements": {
+			"get": {
+				"operationId": "GetMyAchievements",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/Achievement"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			}
+		},
 		"/users/me/details": {
 			"put": {
 				"operationId": "SaveMyDetails",
@@ -717,6 +915,32 @@
 						}
 					}
 				}
+			}
+		},
+		"/admin/students": {
+			"get": {
+				"operationId": "GetStudentAnalytics",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/StudentAnalytics"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
 			}
 		},
 		"/monoliths": {

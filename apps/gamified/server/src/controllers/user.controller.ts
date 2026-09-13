@@ -6,10 +6,12 @@ import { User, AvatarConfig } from '@shared/api/models/user.model';
 import { UserStats } from '@shared/api/models/user-stats.model';
 import { FarmProgress } from '@shared/api/models/farm.model';
 import { AttemptResult, SubmitAttemptRequest } from '@shared/api/models/attempt.model';
+import { Achievement } from '@shared/api/models/achievement.model';
 import { userService } from '@shared/server/src/services/user.service';
 import { userStatsService } from '@shared/server/src/services/user-stats.service';
 import { farmService } from '@shared/server/src/services/farm.service';
 import { attemptService } from '@shared/server/src/services/attempt.service';
+import { achievementService } from '@shared/server/src/services/achievement.service';
 import '@shared/server/src/middleware/auth.middleware';
 
 interface SaveDetailsRequest {
@@ -80,6 +82,12 @@ export class UserController extends Controller {
   }
 
   @Security('jwt')
+  @Get('me/achievements')
+  public async getMyAchievements(@Request() request: ExpressRequest): Promise<Achievement[]> {
+    return achievementService.getAchievementsForSupabaseUser(request.user!);
+  }
+
+  @Security('jwt')
   @Put('me/details')
   public async saveMyDetails(
     @Request() request: ExpressRequest,
@@ -103,6 +111,6 @@ export class UserController extends Controller {
     @Request() request: ExpressRequest,
     @Body() body: SubmitAttemptRequest
   ): Promise<AttemptResult> {
-    return attemptService.submitAttempt(request.user!, body.questionId, body.selectedOptionId);
+    return attemptService.submitAttempt(request.user!, body.questionId, body.selectedOptionId, body.questionShownAt);
   }
 }

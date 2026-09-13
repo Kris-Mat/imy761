@@ -1,7 +1,9 @@
 import { userRepository } from '../repositories/user.repository';
+import { userStatsRepository } from '../repositories/user-stats.repository';
 import { levelRepository } from '../repositories/level.repository';
 import type { User, AvatarConfig } from '@shared/api/models/user.model';
 import type { AuthenticatedUser } from '../middleware/auth.middleware';
+import { HttpError } from '../lib/http-error';
 
 export class UserService {
 
@@ -11,7 +13,13 @@ export class UserService {
 
   public async syncFromSupabase(claims: AuthenticatedUser): Promise<User> {
     const existing = await userRepository.findBySupabaseId(claims.sub);
-    if (existing) return existing;
+    if (existing) {
+      // Backfills an account that predates gamification, or one left
+      // without a game stat by a reseed (prisma/seed.ts wipes UserGameStat
+      // for everyone but only ever recreates it for brand-new signups).
+      await this.ensureGameStat(existing.id);
+      return existing;
+    }
 
     const meta = (claims.user_metadata ?? {}) as {
       username?: string;
@@ -32,15 +40,23 @@ export class UserService {
       lastName
     });
 
-    // Best-effort: a new account should start at Level 1 so "Rank" isn't
-    // stuck on "Unranked" forever. If no Level 1 is seeded yet, skip silently
-    // rather than failing signup over it.
-    const startingLevelId = await levelRepository.findStartingLevelId();
-    if (startingLevelId) {
-      await userRepository.createGameStat(user.id, startingLevelId);
-    }
+    await this.ensureGameStat(user.id);
 
     return user;
+  }
+
+  // Best-effort: an account should always end up on Level 1 so "Rank" isn't
+  // stuck on "Unranked" forever. If no Level 1 is seeded yet, skip silently
+  // rather than failing sync over it. A no-op if the user already has a
+  // game stat (createGameStat upserts on userId).
+  private async ensureGameStat(userId: number): Promise<void> {
+    const existingGameStat = await userStatsRepository.findGameStat(userId);
+    if (existingGameStat) return;
+
+    const startingLevelId = await levelRepository.findStartingLevelId();
+    if (startingLevelId) {
+      await userRepository.createGameStat(userId, startingLevelId);
+    }
   }
 
   public async updateDetails(claims: AuthenticatedUser, data: {
@@ -61,6 +77,17 @@ export class UserService {
       throw new Error('User not found; sync the user before saving an avatar');
     }
     return userRepository.upsertAvatarConfig(user.id, avatarConfig);
+  }
+
+  // The JWT claims Supabase issues don't carry role (see AuthenticatedUser),
+  // so admin-only endpoints must look the requester up in the DB on every
+  // call rather than trusting anything in the token itself.
+  public async requireAdmin(claims: AuthenticatedUser): Promise<User> {
+    const user = await userRepository.findBySupabaseId(claims.sub);
+    if (!user || user.role !== 'ADMIN') {
+      throw new HttpError(403, 'Admin role required');
+    }
+    return user;
   }
 
 }

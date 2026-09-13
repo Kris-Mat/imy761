@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Anchor, Box, Group } from '@mantine/core';
-import { NavLink as RouterNavLink, Outlet } from 'react-router';
+import { NavLink as RouterNavLink } from 'react-router';
 import NiceAvatar, { genConfig } from 'react-nice-avatar';
 import type { AvatarFullConfig } from 'react-nice-avatar';
 import { Icon } from '@shared/ui/Icon';
+import { AdminNavLink } from '@shared/ui/AdminNavLink';
 import { ScrollSmoother } from '../lib/gsap';
 import { UserProvider, useUser } from '../context/UserContext';
+import PageFadeOutlet from './PageFadeOutlet';
 
 function NavItem({ to, label }: { to: string; label: string; }) {
   return (
@@ -98,6 +100,11 @@ function Layout() {
           to="/quests"
           label="Quests"
         />
+        <NavItem
+          to="/dashboard"
+          label="Dashboard"
+        />
+        <AdminNavLink />
         <ProfileNavAvatar />
       </Group>
 
@@ -110,7 +117,7 @@ function Layout() {
           ref={contentRef}
         >
           <Box component="main">
-            <Outlet />
+            <PageFadeOutlet />
           </Box>
         </div>
       </div>

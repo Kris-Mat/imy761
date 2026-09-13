@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '../config/prisma';
-import type { User, AvatarConfig } from '@shared/api/models/user.model';
+import type { User, AvatarConfig, Role } from '@shared/api/models/user.model';
 
 const withPersonalisation = { personalisation: true } as const;
 
@@ -21,8 +21,11 @@ function toUser(row: UserRow): User {
 
 export class UserRepository {
 
-  public async findAll(): Promise<User[]> {
-    const rows = await getPrismaClient().user.findMany({ include: withPersonalisation });
+  public async findAll(filter?: { role?: Role; }): Promise<User[]> {
+    const rows = await getPrismaClient().user.findMany({
+      where: filter?.role ? { role: filter.role } : undefined,
+      include: withPersonalisation
+    });
     return rows.map(toUser);
   }
 
@@ -46,9 +49,15 @@ export class UserRepository {
     return toUser(row);
   }
 
+  // Upsert rather than create: also used to backfill a game stat for an
+  // account that already exists but is missing one (see
+  // UserService.syncFromSupabase), where a plain create could race or
+  // collide with a row created by a concurrent sync call.
   public async createGameStat(userId: number, levelId: number): Promise<void> {
-    await getPrismaClient().userGameStat.create({
-      data: {
+    await getPrismaClient().userGameStat.upsert({
+      where: { userId },
+      update: {},
+      create: {
         userId, totalXp: 0, currentLevelId: levelId
       }
     });

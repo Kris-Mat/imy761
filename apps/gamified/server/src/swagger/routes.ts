@@ -6,6 +6,8 @@ import {  fetchMiddlewares, ExpressTemplateService } from '@tsoa/runtime';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { UserController } from './../controllers/user.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { AdminController } from './../controllers/admin.controller';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { MonolithController } from './../../../../shared/server/src/controllers/monolith.controller';
 import { expressAuthentication } from './../../../../shared/server/src/middleware/auth.middleware';
 // @ts-ignore - no great way to install types from subpackage
@@ -47,6 +49,22 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "QuestionCategory": {
+        "dataType": "refAlias",
+        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["SOIL_FAMILY_CODE"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "CategoryAccuracy": {
+        "dataType": "refObject",
+        "properties": {
+            "category": {"ref":"QuestionCategory","required":true},
+            "correct": {"dataType":"double","required":true},
+            "attempted": {"dataType":"double","required":true},
+            "accuracyPercent": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "UserStats": {
         "dataType": "refObject",
         "properties": {
@@ -56,6 +74,7 @@ const models: TsoaRoute.Models = {
             "correctAnswers": {"dataType":"double","required":true},
             "currentStreak": {"dataType":"double","required":true},
             "badgesEarned": {"dataType":"double","required":true},
+            "categoryAccuracy": {"dataType":"array","array":{"dataType":"refObject","ref":"CategoryAccuracy"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -76,11 +95,25 @@ const models: TsoaRoute.Models = {
             "id": {"dataType":"double","required":true},
             "name": {"dataType":"string","required":true},
             "farmerName": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+            "scenario": {"dataType":"string","required":true},
             "orderIndex": {"dataType":"double","required":true},
             "visited": {"dataType":"boolean","required":true},
             "completed": {"dataType":"boolean","required":true},
             "scorePercent": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
             "questions": {"dataType":"array","array":{"dataType":"refObject","ref":"FarmQuestionProgress"},"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "Achievement": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"double","required":true},
+            "title": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+            "earned": {"dataType":"boolean","required":true},
+            "earnedAt": {"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},
         },
         "additionalProperties": false,
     },
@@ -112,6 +145,8 @@ const models: TsoaRoute.Models = {
         "dataType": "refObject",
         "properties": {
             "isCorrect": {"dataType":"boolean","required":true},
+            "leveledUp": {"dataType":"boolean","required":true},
+            "newlyUnlockedAchievements": {"dataType":"array","array":{"dataType":"refObject","ref":"Achievement"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -121,6 +156,34 @@ const models: TsoaRoute.Models = {
         "properties": {
             "questionId": {"dataType":"double","required":true},
             "selectedOptionId": {"dataType":"double","required":true},
+            "questionShownAt": {"dataType":"string","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "StudentQuestionStat": {
+        "dataType": "refObject",
+        "properties": {
+            "questionId": {"dataType":"double","required":true},
+            "category": {"ref":"QuestionCategory","required":true},
+            "prompt": {"dataType":"string","required":true},
+            "attempts": {"dataType":"double","required":true},
+            "retryCount": {"dataType":"double","required":true},
+            "correct": {"dataType":"boolean","required":true},
+            "timeTakenSeconds": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "StudentAnalytics": {
+        "dataType": "refObject",
+        "properties": {
+            "userId": {"dataType":"double","required":true},
+            "username": {"dataType":"string","required":true},
+            "email": {"dataType":"string","required":true},
+            "firstName": {"dataType":"string","required":true},
+            "lastName": {"dataType":"string","required":true},
+            "questions": {"dataType":"array","array":{"dataType":"refObject","ref":"StudentQuestionStat"},"required":true},
         },
         "additionalProperties": false,
     },
@@ -150,11 +213,6 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "QuestionCategory": {
-        "dataType": "refAlias",
-        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["DIAGNOSTIC_HORIZONS"]},{"dataType":"enum","enums":["SOIL_FORM"]},{"dataType":"enum","enums":["LANDSCAPE_POSITION"]},{"dataType":"enum","enums":["SUITABILITY"]}],"validators":{}},
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "AnswerOption": {
         "dataType": "refObject",
         "properties": {
@@ -174,6 +232,7 @@ const models: TsoaRoute.Models = {
             "orderIndex": {"dataType":"double","required":true},
             "prompt": {"dataType":"string","required":true},
             "options": {"dataType":"array","array":{"dataType":"refObject","ref":"AnswerOption"},"required":true},
+            "horizonId": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}],"required":true},
         },
         "additionalProperties": false,
     },
@@ -355,6 +414,37 @@ export function RegisterRoutes(app: Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsUserController_getMyAchievements: Record<string, TsoaRoute.ParameterSchema> = {
+                request: {"in":"request","name":"request","required":true,"dataType":"object"},
+        };
+        app.get('/users/me/achievements',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(UserController)),
+            ...(fetchMiddlewares<RequestHandler>(UserController.prototype.getMyAchievements)),
+
+            async function UserController_getMyAchievements(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsUserController_getMyAchievements, request, response });
+
+                const controller = new UserController();
+
+              await templateService.apiHandler({
+                methodName: 'getMyAchievements',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: undefined,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         const argsUserController_saveMyDetails: Record<string, TsoaRoute.ParameterSchema> = {
                 request: {"in":"request","name":"request","required":true,"dataType":"object"},
                 body: {"in":"body","name":"body","required":true,"ref":"SaveDetailsRequest"},
@@ -440,6 +530,37 @@ export function RegisterRoutes(app: Router) {
 
               await templateService.apiHandler({
                 methodName: 'submitAttempt',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: undefined,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsAdminController_getStudentAnalytics: Record<string, TsoaRoute.ParameterSchema> = {
+                request: {"in":"request","name":"request","required":true,"dataType":"object"},
+        };
+        app.get('/admin/students',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(AdminController)),
+            ...(fetchMiddlewares<RequestHandler>(AdminController.prototype.getStudentAnalytics)),
+
+            async function AdminController_getStudentAnalytics(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsAdminController_getStudentAnalytics, request, response });
+
+                const controller = new AdminController();
+
+              await templateService.apiHandler({
+                methodName: 'getStudentAnalytics',
                 controller,
                 response,
                 next,

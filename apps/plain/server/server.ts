@@ -1,8 +1,9 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import cors from 'cors';
 import dotenv from "dotenv";
 import path from "path";
+import { HttpError } from '@shared/server/src/lib/http-error';
 import { RegisterRoutes } from './src/swagger/routes';
 
 const app: Application = express();
@@ -17,6 +18,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(express.json());
 
 // 1. Serve the freshly generated Swagger UI spec file
 app.use('/docs', swaggerUi.serve, async (_req: Request, res: Response) => {
@@ -25,7 +27,22 @@ app.use('/docs', swaggerUi.serve, async (_req: Request, res: Response) => {
 });
 
 // 2. Register the tsoa engine routes
-RegisterRoutes(app); 
+RegisterRoutes(app);
+
+// 3. Map thrown HttpErrors (e.g. the admin role check) to their intended
+// status code; tsoa's generated routes just call next(err) on any thrown
+// error, which would otherwise always fall through to Express's default
+// 500 handler.
+// Express only recognises error-handling middleware by this exact 4-param
+// arity; _next is required even though it's never called.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof HttpError) {
+    return res.status(err.status).json({ message: err.message });
+  }
+  console.error(err);
+  return res.status(500).json({ message: 'Internal server error' });
+});
 
 // starting the server
 app.listen(serverPort, () => {

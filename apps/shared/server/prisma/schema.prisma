@@ -62,6 +62,7 @@ model Horizon {
   monolithId Int
 
   characteristics HorizonCharacteristic[]
+  questions       Question[]
 }
 
 // Reuses the DiagnosticHorizonRef table slot: was a shared horizon-type
@@ -139,6 +140,7 @@ model Level {
 enum QuestionCategory {
   DIAGNOSTIC_HORIZONS
   SOIL_FORM
+  SOIL_FAMILY_CODE
   LANDSCAPE_POSITION
   SUITABILITY
 }
@@ -151,6 +153,13 @@ model Question {
 
   monolith   Monolith @relation(fields: [monolithId], references: [id])
   monolithId Int
+
+  // Set only for a DIAGNOSTIC_HORIZONS question graded against one specific
+  // horizon's colour (e.g. "what's the Munsell value/chroma for this
+  // horizon?") — null for every other question, which isn't tied to a
+  // single horizon.
+  horizon   Horizon? @relation(fields: [horizonId], references: [id])
+  horizonId Int?
 
   options  AnswerOption[]
   attempts UserAttempt[]
