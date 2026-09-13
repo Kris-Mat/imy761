@@ -927,7 +927,14 @@ function Quests() {
           opacity: contentVisible ? 1 : 0, transition: `opacity ${CONTENT_FADE_MS}ms ease`
         }}
       >
-        {loading && <Loader color="terracotta" />}
+        {loading && (
+          <Group
+            justify="center"
+            mih="60vh"
+          >
+            <Loader color="terracotta" />
+          </Group>
+        )}
 
         {!loading && !selectedFarm && (
           <Stack gap={40}>
