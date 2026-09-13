@@ -1,30 +1,97 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Avatar, Button, Divider, Flex, Group, List, Stack, Text, Title } from '@mantine/core';
+import {
+  Avatar, Button, Divider, Flex, Group, Loader, Stack, Text, TextInput, Title
+} from '@mantine/core';
 import { Icon } from '@shared/ui/Icon';
+import type { User } from '@shared/api/models/user.model';
 import { authApi } from '@shared/api/services/auth.api';
+import { userApi } from '@shared/api/services/users.api';
 import { useContent } from '../context/ContentContext';
 import SectionCard from '../components/SectionCard';
 
-const currentUser = {
-  firstName: 'Jane',
-  lastName: 'Doe',
-  studentNumber: 'u12345678',
+// Fields with no backing data model anywhere (User has no student-number,
+// course-role, or mentor concept) — left as the static placeholders they
+// already were, not wired to editing since there's nothing real to save.
+// See HANDOFF.md.
+const STATIC_PROFILE_INFO = {
   role: 'Soil Science Student',
-  email: 'u12345678@tuks.co.za',
   mentorName: 'Prof. Janette Briggs'
 };
 
-// Static placeholders, not DB-backed — not confirmed in scope. See HANDOFF.md.
-const mentorInfo = {
-  mentorComment: 'You are doing great Jane, I am seeing good progress in your marks!',
-  academicGoals: ['Study 6 days a week', 'Complete all three chapters', 'Review the Soil Family Table']
-};
+interface DetailsForm {
+  username: string;
+  firstName: string;
+  lastName: string;
+}
 
 function Profile() {
   const { monoliths, completedMonolithIds } = useContent();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [user, setUser] = useState<User | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const session = await authApi.getSession();
+        if (!session) throw new Error('Not authenticated');
+        const synced = await userApi.syncUser(session.access_token);
+        if (!cancelled) setUser(synced);
+      } catch (error) {
+        console.error('Failed to load user', error);
+      } finally {
+        if (!cancelled) setUserLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [editing, setEditing] = useState(false);
+  const [draftDetails, setDraftDetails] = useState<DetailsForm>({
+    username: '', firstName: '', lastName: ''
+  });
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+
+  function startEditing() {
+    if (!user) return;
+    setDraftDetails({
+      username: user.username, firstName: user.firstName, lastName: user.lastName
+    });
+    setDetailsError(null);
+    setEditing(true);
+  }
+
+  async function handleSaveDetails() {
+    if (!draftDetails.username.trim() || !draftDetails.firstName.trim() || !draftDetails.lastName.trim()) {
+      setDetailsError('Username, first name and last name are all required.');
+      return;
+    }
+    setSavingDetails(true);
+    setDetailsError(null);
+    try {
+      const session = await authApi.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const saved = await userApi.saveMyDetails(session.access_token, {
+        username: draftDetails.username.trim(),
+        firstName: draftDetails.firstName.trim(),
+        lastName: draftDetails.lastName.trim()
+      });
+      setUser(saved);
+      setEditing(false);
+    } catch (error) {
+      console.error('Failed to save details', error);
+      setDetailsError('Failed to save your changes. Please try again.');
+    } finally {
+      setSavingDetails(false);
+    }
+  }
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -36,6 +103,8 @@ function Profile() {
       setLoggingOut(false);
     }
   }
+
+  const sortedMonoliths = [...monoliths].sort((a, b) => a.orderIndex - b.orderIndex);
 
   return (
     <Stack maw={1100} mx="auto">
@@ -77,14 +146,87 @@ function Profile() {
                 weight="fill"
               />
             </Avatar>
-            <Text
-              fw={700}
-              fz="lg"
-              c="charcoal.9"
-            >{currentUser.firstName} {currentUser.lastName}
-            </Text>
-            <Text c="charcoal.6" fz="sm">{currentUser.studentNumber}</Text>
-            <Text c="charcoal.6" fz="sm">{currentUser.role}</Text>
+
+            {userLoading ? (
+              <Loader
+                color="terracotta"
+                size="sm"
+              />
+            ) : editing ? (
+              <Stack gap="sm">
+                <TextInput
+                  label="Username"
+                  size="xs"
+                  value={draftDetails.username}
+                  onChange={(event) => setDraftDetails((prev) => ({
+                    ...prev, username: event.currentTarget.value
+                  }))}
+                />
+                <TextInput
+                  label="First name"
+                  size="xs"
+                  value={draftDetails.firstName}
+                  onChange={(event) => setDraftDetails((prev) => ({
+                    ...prev, firstName: event.currentTarget.value
+                  }))}
+                />
+                <TextInput
+                  label="Last name"
+                  size="xs"
+                  value={draftDetails.lastName}
+                  onChange={(event) => setDraftDetails((prev) => ({
+                    ...prev, lastName: event.currentTarget.value
+                  }))}
+                />
+                {detailsError && (
+                  <Text
+                    fz="xs"
+                    c="red.7"
+                  >
+                    {detailsError}
+                  </Text>
+                )}
+                <Group gap="xs">
+                  <Button
+                    size="xs"
+                    variant="default"
+                    disabled={savingDetails}
+                    onClick={() => setEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="xs"
+                    color="terracotta"
+                    loading={savingDetails}
+                    onClick={handleSaveDetails}
+                  >
+                    Save
+                  </Button>
+                </Group>
+              </Stack>
+            ) : (
+              <>
+                <Text
+                  fw={700}
+                  fz="lg"
+                  c="charcoal.9"
+                >{user?.firstName} {user?.lastName}
+                </Text>
+                <Text c="charcoal.6" fz="sm">{user?.username}</Text>
+                <Text c="charcoal.6" fz="sm">{STATIC_PROFILE_INFO.role}</Text>
+                <Button
+                  variant="subtle"
+                  color="terracotta"
+                  size="xs"
+                  w="fit-content"
+                  px={0}
+                  onClick={startEditing}
+                >
+                  Edit profile
+                </Button>
+              </>
+            )}
 
             <Stack gap={2} mt="md">
               <Text
@@ -93,7 +235,7 @@ function Profile() {
                 c="charcoal.8"
               >Email
               </Text>
-              <Text fz="sm" c="charcoal.7">{currentUser.email}</Text>
+              <Text fz="sm" c="charcoal.7">{user?.email}</Text>
             </Stack>
             <Stack gap={2} mt="md">
               <Text
@@ -111,7 +253,7 @@ function Profile() {
                 c="charcoal.8"
               >Mentor
               </Text>
-              <Text fz="sm" c="charcoal.7">{currentUser.mentorName}</Text>
+              <Text fz="sm" c="charcoal.7">{STATIC_PROFILE_INFO.mentorName}</Text>
             </Stack>
 
             <Divider mt="md" />
@@ -131,47 +273,29 @@ function Profile() {
             gap="xl"
           >
             <Stack gap="sm">
-              <Text
-                fz="xl"
-                fw={700}
-                c="charcoal.9"
-              >Learning Dashboard
-              </Text>
               <Group justify="space-between">
-                <Text fw={600} c="charcoal.8">Chapters completed</Text>
+                <Text
+                  fz="xl"
+                  fw={700}
+                  c="charcoal.9"
+                >Chapters completed
+                </Text>
                 <Text c="charcoal.6">{completedMonolithIds.length} / {monoliths.length}</Text>
               </Group>
-              <Text
-                fw={700}
-                fz="sm"
-                mt="md"
-                c="charcoal.8"
-              >Comments from mentor:
-              </Text>
-              <Text fs="italic" c="charcoal.7">&ldquo;{mentorInfo.mentorComment}&rdquo;</Text>
-            </Stack>
-
-            <Divider />
-
-            <Stack gap="sm">
-              <Text
-                fz="xl"
-                fw={700}
-                c="charcoal.9"
-              >My Academic Goals
-              </Text>
-              <List spacing="xs">
-                {mentorInfo.academicGoals.map((goal) => (
-                  <List.Item key={goal}>{goal}</List.Item>
-                ))}
-              </List>
-              <Button
-                variant="light"
-                color="terracotta"
-                radius="xl"
-                w="fit-content"
-              >+ edit goals
-              </Button>
+              <Stack gap={6}>
+                {sortedMonoliths.map((monolith, index) => {
+                  const completed = completedMonolithIds.includes(monolith.id);
+                  return (
+                    <Text
+                      key={monolith.id}
+                      fz="sm"
+                      c={completed ? 'moss.8' : 'charcoal.6'}
+                    >
+                      Chapter {index + 1}: {completed ? 'Completed' : 'Not completed'}
+                    </Text>
+                  );
+                })}
+              </Stack>
             </Stack>
           </Stack>
         </Flex>
