@@ -66,6 +66,22 @@ export class AttemptRepository {
     return new Map(groups.map((group) => [group.questionId, group._count._all]));
   }
 
+  // Latest attempt per question (highest id, since attempts are never
+  // updated in place) for the given user — a question with zero attempts is
+  // simply absent from the map, same convention as countAttemptsPerQuestion.
+  public async findLatestAttemptPerQuestion(userId: number): Promise<Map<number, boolean>> {
+    const attempts = await getPrismaClient().userAttempt.findMany({
+      where: { userId },
+      orderBy: { id: 'asc' },
+      select: {
+        questionId: true, isCorrect: true 
+      }
+    });
+    const result = new Map<number, boolean>();
+    attempts.forEach((attempt) => result.set(attempt.questionId, attempt.isCorrect));
+    return result;
+  }
+
   public async create(data: {
     userId: number;
     questionId: number;

@@ -3,13 +3,24 @@ import { userStatsRepository } from '../repositories/user-stats.repository';
 import { levelRepository } from '../repositories/level.repository';
 import { attemptRepository } from '../repositories/attempt.repository';
 import { achievementService } from './achievement.service';
-import type { AttemptResult } from '@shared/api/models/attempt.model';
+import type { AttemptResult, QuestionAttemptStatus } from '@shared/api/models/attempt.model';
 import type { AuthenticatedUser } from '../middleware/auth.middleware';
 
 const POINTS_PER_CORRECT_ANSWER = 10;
 const PASSING_SCORE_PERCENT = 75;
 
 export class AttemptService {
+
+  public async getMyAttemptStatuses(claims: AuthenticatedUser): Promise<QuestionAttemptStatus[]> {
+    const user = await userRepository.findBySupabaseId(claims.sub);
+    if (!user) {
+      throw new Error('User not found; sync the user before requesting attempts');
+    }
+    const latestPerQuestion = await attemptRepository.findLatestAttemptPerQuestion(user.id);
+    return [...latestPerQuestion.entries()].map(([questionId, isCorrect]) => ({
+      questionId, isCorrect
+    }));
+  }
 
   public async submitAttempt(
     claims: AuthenticatedUser,

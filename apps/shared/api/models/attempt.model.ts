@@ -9,6 +9,11 @@ export interface SubmitAttemptRequest {
   questionShownAt: string;
 }
 
+export interface QuestionAttemptStatus {
+  questionId: number;
+  isCorrect: boolean;
+}
+
 export interface AttemptResult {
   isCorrect: boolean;
   // True exactly when this attempt pushed the user's rank forward to a new

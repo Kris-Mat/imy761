@@ -1,7 +1,7 @@
 import { Controller, Route, Get, Post, Body, Security, Request } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
 import { User } from '@shared/api/models/user.model';
-import { AttemptResult, SubmitAttemptRequest } from '@shared/api/models/attempt.model';
+import { AttemptResult, QuestionAttemptStatus, SubmitAttemptRequest } from '@shared/api/models/attempt.model';
 import { userService } from '@shared/server/src/services/user.service';
 import { attemptService } from '@shared/server/src/services/attempt.service';
 import '@shared/server/src/middleware/auth.middleware';
@@ -42,6 +42,12 @@ export class UserController extends Controller {
   public async syncUser(@Request() request: ExpressRequest): Promise<User> {
     // @Security('jwt') guarantees expressAuthentication has run and set request.user.
     return userService.syncFromSupabase(request.user!);
+  }
+
+  @Security('jwt')
+  @Get('me/attempts')
+  public async getMyAttempts(@Request() request: ExpressRequest): Promise<QuestionAttemptStatus[]> {
+    return attemptService.getMyAttemptStatuses(request.user!);
   }
 
   @Security('jwt')
