@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   Avatar, Box, Button, Card, Flex, Group, Image, Loader, Modal, Paper, Progress, Radio, Stack, Text, Title, UnstyledButton
@@ -78,6 +79,53 @@ function showAchievementUnlockToast(newlyUnlockedAchievements: Achievement[]) {
     icon,
     autoClose: 6000
   });
+}
+
+// How long the anticipation beat plays before the existing toast fires —
+// long enough to read as "something's about to happen", short enough not to
+// delay the actual reveal into feeling sluggish.
+const ACHIEVEMENT_ANTICIPATION_MS = 340;
+
+// The brief "something's about to happen" beat shown just before the
+// achievement toast fires, in the same top-right corner the toast is about
+// to land in (see root.tsx's <Notifications position="top-right" />) — a
+// small trophy badge brightening in place, same gold as TrophyCase's earned
+// styling, that fades out right as the real toast takes over. Portaled to
+// document.body for the same reason StaticMountainScene is: escaping the
+// ScrollSmoother-transformed ancestor that would otherwise break
+// position:fixed.
+function AchievementGlowBeat() {
+  return createPortal(
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        // Mantine's Notifications container defaults to the "overlay" level
+        // (z-index 400) — this needs to sit clearly above it, not tie with
+        // it, so the beat is never left stacked under the toast that lands
+        // in the same corner moments later.
+        zIndex: 450,
+        width: 44,
+        height: 44,
+        borderRadius: 999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#e0b457',
+        animation: `quest-achievement-glow ${ACHIEVEMENT_ANTICIPATION_MS}ms ease-out`
+      }}
+    >
+      <Icon
+        name="Trophy"
+        weight="fill"
+        size={20}
+        color="#fff8f1"
+      />
+    </div>,
+    document.body
+  );
 }
 
 function FarmerPortrait({ farmerName, farmOrderIndex }: { farmerName: string; farmOrderIndex: number; }) {
@@ -1152,6 +1200,29 @@ function QuestRunnerInner({
   );
   const [revealed, setRevealed] = useState(storedOptionId != null);
   const [submitting, setSubmitting] = useState(false);
+  const [celebratingAchievement, setCelebratingAchievement] = useState(false);
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
+  const celebrationTimeoutRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (celebrationTimeoutRef.current != null) window.clearTimeout(celebrationTimeoutRef.current);
+  }, []);
+
+  // Doesn't change when an unlock is triggered (still fires right off the
+  // submit response) — only adds a brief glow beat before the existing
+  // toast, unless reduced motion is set, in which case the toast fires with
+  // no beat at all.
+  function celebrateAchievementUnlock(newlyUnlockedAchievements: Achievement[]) {
+    if (newlyUnlockedAchievements.length === 0) return;
+    if (reducedMotion) {
+      showAchievementUnlockToast(newlyUnlockedAchievements);
+      return;
+    }
+    setCelebratingAchievement(true);
+    celebrationTimeoutRef.current = window.setTimeout(() => {
+      setCelebratingAchievement(false);
+      showAchievementUnlockToast(newlyUnlockedAchievements);
+    }, ACHIEVEMENT_ANTICIPATION_MS);
+  }
 
   // Timestamp the current question was first shown, used as the attempt's
   // startedAt so time-on-task reflects real elapsed time rather than the
@@ -1219,7 +1290,7 @@ function QuestRunnerInner({
       if (!session) throw new Error('Not authenticated');
       const result = await userApi.submitAttempt(session.access_token, question.id, Number(selectedOptionId), questionShownAt);
       setRevealed(true);
-      showAchievementUnlockToast(result.newlyUnlockedAchievements);
+      celebrateAchievementUnlock(result.newlyUnlockedAchievements);
     } catch (submitError) {
       console.error('Failed to submit attempt', submitError);
       notifications.show({
@@ -1240,105 +1311,111 @@ function QuestRunnerInner({
   // ScrollSmoother) when content runs taller than the viewport.
   if (!isComplete && phase === 'question' && question) {
     return (
-      <QuestionScreen
-        farm={farm}
-        monolith={monolith}
-        question={question}
-        stepIndex={stepIndex}
-        sameCategoryQuestions={sameCategoryQuestions}
-        selectedOptionId={selectedOptionId}
-        onSelect={setSelectedOptionId}
-        revealed={revealed}
-        submitting={submitting}
-        isReview={isReview}
-        unanswered={isReview && storedOptionId === null}
-        farmerName={farmerName}
-        farmOrderIndex={farmOrderIndex}
-        onSubmit={handleSubmitAnswer}
-        onNext={() => goToStep(stepIndex + 1)}
-        onPrevious={() => goToStep(stepIndex - 1)}
-        canGoPrevious={stepIndex > 0}
-        onExit={() => navigate('/quests')}
-      />
+      <>
+        {celebratingAchievement && <AchievementGlowBeat />}
+        <QuestionScreen
+          farm={farm}
+          monolith={monolith}
+          question={question}
+          stepIndex={stepIndex}
+          sameCategoryQuestions={sameCategoryQuestions}
+          selectedOptionId={selectedOptionId}
+          onSelect={setSelectedOptionId}
+          revealed={revealed}
+          submitting={submitting}
+          isReview={isReview}
+          unanswered={isReview && storedOptionId === null}
+          farmerName={farmerName}
+          farmOrderIndex={farmOrderIndex}
+          onSubmit={handleSubmitAnswer}
+          onNext={() => goToStep(stepIndex + 1)}
+          onPrevious={() => goToStep(stepIndex - 1)}
+          canGoPrevious={stepIndex > 0}
+          onExit={() => navigate('/quests')}
+        />
+      </>
     );
   }
 
   return (
-    <Box
-      px="xl"
-      pt={90}
-      pb={80}
-      maw={900}
-      mx="auto"
-    >
-      <Stack gap="xl">
-        <Stack gap={6}>
-          <Text
-            fz={13}
-            fw={800}
-            c="terracotta.8"
-            tt="uppercase"
-            style={{ letterSpacing: '0.08em' }}
-          >
-            {farmName} &bull; {farmerName}
-          </Text>
-          <Title
-            order={1}
-            c="charcoal.9"
-            fz={{
-              base: 26, sm: 34
-            }}
-          >
-            {isComplete ? 'Day Complete' : `Day ${stepIndex + 1} — ${categoryHeading}`}
-            {isReview && ' — Review'}
-          </Title>
-        </Stack>
-
-        {isComplete && scoreLoading && (
-          <Stack
-            align="center"
-            py="xl"
-          >
-            <Loader color="terracotta" />
+    <>
+      {celebratingAchievement && <AchievementGlowBeat />}
+      <Box
+        px="xl"
+        pt={90}
+        pb={80}
+        maw={900}
+        mx="auto"
+      >
+        <Stack gap="xl">
+          <Stack gap={6}>
+            <Text
+              fz={13}
+              fw={800}
+              c="terracotta.8"
+              tt="uppercase"
+              style={{ letterSpacing: '0.08em' }}
+            >
+              {farmName} &bull; {farmerName}
+            </Text>
+            <Title
+              order={1}
+              c="charcoal.9"
+              fz={{
+                base: 26, sm: 34
+              }}
+            >
+              {isComplete ? 'Day Complete' : `Day ${stepIndex + 1} — ${categoryHeading}`}
+              {isReview && ' — Review'}
+            </Title>
           </Stack>
-        )}
-        {isComplete && !scoreLoading && (
-          <CompletionStep
-            farmerName={farmerName}
-            farmOrderIndex={farmOrderIndex}
-            farmName={farmName}
-            correctCount={correctCount}
-            total={total}
-            continueLabel={nextFarm ? 'Next Quest' : 'Back to Quests'}
-            onContinue={() => navigate(nextFarm ? `/quests/${nextFarm.id}/0` : '/quests')}
-            onRetry={startRetry}
-            onReview={startReview}
-          />
-        )}
-        {!isComplete && phase === 'intro' && (
-          <IntroStep
-            farmerName={farmerName}
-            farmOrderIndex={farmOrderIndex}
-            description={farm.description}
-            message={farm.scenario}
-            startLabel={attempted ? 'Retry Quest' : 'Start Quest'}
-            onContinue={() => setPhase('explore')}
-            onReview={finished ? startReview : undefined}
-          />
-        )}
-        {!isComplete && phase === 'explore' && (
-          <ExploreStep
-            monolith={monolith}
-            // Linked straight here from the Quests dropdown, this is a
-            // read-the-profile visit, not the middle of a run — walking on
-            // into the questions would start recording a new attempt the user
-            // never asked for. Send them back instead.
-            continueLabel={linkedToProfile ? 'Back to Quests' : 'Continue'}
-            onContinue={() => (linkedToProfile ? navigate('/quests') : setPhase('question'))}
-          />
-        )}
-      </Stack>
-    </Box>
+
+          {isComplete && scoreLoading && (
+            <Stack
+              align="center"
+              py="xl"
+            >
+              <Loader color="terracotta" />
+            </Stack>
+          )}
+          {isComplete && !scoreLoading && (
+            <CompletionStep
+              farmerName={farmerName}
+              farmOrderIndex={farmOrderIndex}
+              farmName={farmName}
+              correctCount={correctCount}
+              total={total}
+              continueLabel={nextFarm ? 'Next Quest' : 'Back to Quests'}
+              onContinue={() => navigate(nextFarm ? `/quests/${nextFarm.id}/0` : '/quests')}
+              onRetry={startRetry}
+              onReview={startReview}
+            />
+          )}
+          {!isComplete && phase === 'intro' && (
+            <IntroStep
+              farmerName={farmerName}
+              farmOrderIndex={farmOrderIndex}
+              description={farm.description}
+              message={farm.scenario}
+              startLabel={attempted ? 'Retry Quest' : 'Start Quest'}
+              onContinue={() => setPhase('explore')}
+              onReview={finished ? startReview : undefined}
+            />
+          )}
+          {!isComplete && phase === 'explore' && (
+            <ExploreStep
+              monolith={monolith}
+              // Linked straight here from the Quests dropdown, this is a
+              // read-the-profile visit, not the middle of a run — walking on
+              // into the questions would start recording a new attempt the user
+              // never asked for. Send them back instead.
+              continueLabel={linkedToProfile ? 'Back to Quests' : 'Continue'}
+              onContinue={() => (linkedToProfile ? navigate('/quests') : setPhase('question'))}
+            />
+          )}
+        </Stack>
+      </Box>
+    </>
   );
 }
 

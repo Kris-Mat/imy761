@@ -153,6 +153,28 @@ body {
   }
 }
 
+/* The anticipation beat shown just before an achievement's existing toast
+   fires — a brief brighten-and-settle on a small trophy badge, same gold as
+   TrophyCase's earned styling, in the corner the real toast is about to
+   land (top-right, matching root.tsx's <Notifications position="top-right"/>). */
+@keyframes quest-achievement-glow {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(224, 180, 87, 0.65);
+  }
+  45% {
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 0 0 0 16px rgba(224, 180, 87, 0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+    box-shadow: 0 0 0 16px rgba(224, 180, 87, 0);
+  }
+}
+
 @keyframes quest-streak-flicker {
   0% {
     opacity: 0.35;

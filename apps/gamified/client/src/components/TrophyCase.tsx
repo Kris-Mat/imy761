@@ -20,9 +20,14 @@ function formatEarnedAt(earnedAt: string) {
 }
 
 // Locked/unlocked treatment: a solid gold-tinted card with a spinning medal
-// for an earned trophy, a pale dashed-border card with a greyed-out medal for
-// a locked one — the same earned/locked split FarmerProgressGrid.tsx's badges
-// draw, just in this card's own colour language instead of that one's.
+// for an earned trophy; a locked one gets a soil-textured badge instead of a
+// flat grey circle — the same earth-tone diagonal hatch Dashboard's pit-layer
+// bars use (see PitLayerRow in Dashboard.tsx), with the trophy rendered as a
+// faint impression in the soil rather than a crisp icon, so it reads as
+// "still buried, waiting to be dug up" instead of just disabled. No tier/
+// rarity field exists on Achievement (id/title/description/earned/earnedAt
+// only), so earned badges all get the same gold treatment — inventing a
+// rarity-based glow here would be presentation for data that isn't there.
 function TrophyBadge({ achievement }: { achievement: Achievement; }) {
   const { earned } = achievement;
   return (
@@ -49,15 +54,20 @@ function TrophyBadge({ achievement }: { achievement: Achievement; }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: earned ? '#e0b457' : 'var(--mantine-color-charcoal-1)',
+            background: earned
+              ? '#e0b457'
+              // Diagonal hatch over an earth-brown gradient — a CSS pattern
+              // in the app's own soil palette rather than a new asset.
+              : 'repeating-linear-gradient(125deg, rgba(255, 248, 241, 0.12) 0 3px, transparent 3px 9px), linear-gradient(135deg, #8c5a33, #6f4526)',
+            boxShadow: earned ? 'none' : 'inset 0 2px 6px rgba(41, 26, 13, 0.4)',
             animation: earned ? 'quest-flag-wave 4.2s ease-in-out infinite' : 'none'
           }}
         >
           <Icon
             name="Trophy"
             size={24}
-            weight={earned ? 'fill' : 'regular'}
-            color={earned ? '#fff8f1' : 'var(--mantine-color-charcoal-4)'}
+            weight="fill"
+            color={earned ? '#fff8f1' : 'rgba(255, 248, 241, 0.3)'}
           />
         </Box>
         <Text
