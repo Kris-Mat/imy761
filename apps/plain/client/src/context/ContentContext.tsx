@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Monolith } from '@shared/api/models/monolith.model';
 import { monolithsApi } from '@shared/api/services/monoliths.api';
+import { authApi } from '@shared/api/services/auth.api';
+import { userApi } from '@shared/api/services/users.api';
 
 interface ContentContextValue {
   monoliths: Monolith[];
@@ -8,6 +10,11 @@ interface ContentContextValue {
   error: string | null;
   completedMonolithIds: number[];
   markMonolithCompleted: (monolithId: number) => void;
+  // Latest attempt result per questionId — absent entries mean the question
+  // hasn't been attempted yet. Fetched from the server so it survives a
+  // reload, unlike completedMonolithIds above.
+  questionResults: Map<number, boolean>;
+  refreshQuestionResults: () => void;
 }
 
 const contentContext = createContext<ContentContextValue | undefined>(undefined);
@@ -17,6 +24,8 @@ export function ContentProvider({ children }: { children: ReactNode; }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completedMonolithIds, setCompletedMonolithIds] = useState<number[]>([]);
+  const [questionResults, setQuestionResults] = useState<Map<number, boolean>>(new Map());
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +52,27 @@ export function ContentProvider({ children }: { children: ReactNode; }) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const session = await authApi.getSession();
+        if (!session) return;
+        const attempts = await userApi.getMyAttempts(session.access_token);
+        if (!cancelled) {
+          setQuestionResults(new Map(attempts.map((attempt) => [attempt.questionId, attempt.isCorrect])));
+        }
+      } catch (fetchError) {
+        console.error('Failed to load question attempt history', fetchError);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshCounter]);
+
   const value = useMemo<ContentContextValue>(() => ({
     monoliths,
     loading,
@@ -50,8 +80,10 @@ export function ContentProvider({ children }: { children: ReactNode; }) {
     completedMonolithIds,
     markMonolithCompleted: (monolithId: number) => {
       setCompletedMonolithIds((prev) => (prev.includes(monolithId) ? prev : [...prev, monolithId]));
-    }
-  }), [monoliths, loading, error, completedMonolithIds]);
+    },
+    questionResults,
+    refreshQuestionResults: () => setRefreshCounter((prev) => prev + 1)
+  }), [monoliths, loading, error, completedMonolithIds, questionResults]);
 
   return <contentContext.Provider value={value}>{children}</contentContext.Provider>;
 }

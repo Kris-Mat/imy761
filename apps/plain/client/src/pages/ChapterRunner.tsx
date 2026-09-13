@@ -237,7 +237,7 @@ interface ChapterRunnerInnerProps {
 
 function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: ChapterRunnerInnerProps) {
   const navigate = useNavigate();
-  const { markMonolithCompleted } = useContent();
+  const { markMonolithCompleted, refreshQuestionResults } = useContent();
 
   const steps = buildSteps(monolith);
   const [stepIndex, setStepIndex] = useState(initialStepIndex);
@@ -291,6 +291,7 @@ function ChapterRunnerInner({ monolith, nextMonolith, initialStepIndex }: Chapte
       await userApi.submitAttempt(session.access_token, step.question.id, Number(selectedOptionId), questionShownAt);
       setRevealed(true);
       setRevealedQuestionIds((prev) => new Set(prev).add(step.question.id));
+      refreshQuestionResults();
     } catch (submitError) {
       console.error('Failed to submit attempt', submitError);
       setError('Failed to submit your answer. Please try again.');
