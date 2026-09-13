@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   Avatar, Box, Button, Card, Flex, Group, Image, Loader, Modal, Paper, Progress, Radio, Stack, Text, Title, UnstyledButton
 } from '@mantine/core';
+import { useReducedMotion } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import confetti from 'canvas-confetti';
 import type { Achievement } from '@shared/api/models/achievement.model';
@@ -16,6 +17,7 @@ import { useMonoliths } from '../hooks/useMonoliths';
 import { categoryLabels } from '../lib/questionCategory';
 import { hasAttempted, hasFinished } from '../lib/questProgress';
 import MunsellChip from '../components/MunsellChip';
+import { useAnswerFeedback } from '../hooks/useAnswerFeedback';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
@@ -121,6 +123,15 @@ function HorizonDetails({ horizon, revealLabel = true, revealCharacteristics = t
   revealLabel?: boolean;
   revealCharacteristics?: boolean;
 }) {
+  // A gated horizon's characteristics aren't rendered at all (the `&&` above
+  // short-circuits), so the stagger below can't leak anything through timing
+  // — there's simply nothing here to reveal until revealCharacteristics
+  // flips true on a later render.
+  // Read synchronously (not the default effect-deferred value) — this
+  // component mounts already-revealed in ExploreStep, so an effect-deferred
+  // read would let the stagger play once for a reduced-motion user before
+  // flipping off a render later.
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
   return (
     <Stack gap="xs">
       <Title order={4}>{horizon.label}</Title>
@@ -131,10 +142,14 @@ function HorizonDetails({ horizon, revealLabel = true, revealCharacteristics = t
         chroma={horizon.colourChroma}
         revealLabel={revealLabel}
       />
-      {revealCharacteristics && horizon.characteristics.map((characteristic) => (
+      {revealCharacteristics && horizon.characteristics.map((characteristic, index) => (
         <Text
           key={characteristic.id}
           size="sm"
+          style={reducedMotion ? undefined : {
+            animation: 'quest-feedback-rise 320ms ease-out both',
+            animationDelay: `${index * 90}ms`
+          }}
         >
           &bull; {characteristic.text}
         </Text>
@@ -563,6 +578,7 @@ function QuestionScreen({
   // new step (its own key includes stepIndex).
   const [activeHorizonId, setActiveHorizonId] = useState<number | null>(null);
   const [pitOpened, setPitOpened] = useState(false);
+  const feedback = useAnswerFeedback();
 
   // Only set for a horizon-linked question (Question.horizonId) — undefined
   // for every other question type.
@@ -581,7 +597,6 @@ function QuestionScreen({
   const hideCharacteristicsForHorizonId = !revealed && isCharacteristicQuestion ? question.horizonId : null;
 
   const selectedOption = question.options.find((option) => String(option.id) === selectedOptionId);
-  const correctOption = question.options.find((option) => option.isCorrect);
   const answeredCorrectly = !!selectedOption?.isCorrect;
   const showFeedback = revealed && !unanswered;
 
@@ -718,17 +733,25 @@ function QuestionScreen({
                 const borderColor = optionBorderColor(option, revealed, selectedOptionId);
                 const isSelected = String(option.id) === selectedOptionId;
                 const isCorrectOption = revealed && option.isCorrect;
+                // Review mounts a question already-revealed, replaying an
+                // answer from a previous pass — the wobble is a reaction to
+                // the moment of answering, not something a read-only replay
+                // of an old wrong pick should play on every mount.
+                const isWrongSelected = !isReview && revealed && isSelected && !option.isCorrect;
                 // Once revealed, every option except the selected one and
                 // the correct one (the two the outline colour already
                 // marks up) fades back so the two that matter stand out.
                 const dimmed = revealed && !borderColor;
+                const optionAnimation = isCorrectOption
+                  ? feedback.correctOptionAnimation()
+                  : isWrongSelected ? feedback.wrongOptionAnimation() : undefined;
                 return (
                   <Radio.Card
                     key={option.id}
                     value={String(option.id)}
                     radius="xl"
                     p="md"
-                    className={`quest-option-row${isCorrectOption ? ' quest-option-correct' : ''}`}
+                    className="quest-option-row"
                     bg="#fdf8ee"
                     style={{
                       // `unanswered` only happens in review, where there's
@@ -739,7 +762,7 @@ function QuestionScreen({
                         : isSelected ? '3px solid var(--mantine-color-terracotta-6)' : '3px solid transparent',
                       boxShadow: isSelected || isCorrectOption ? 'var(--mantine-shadow-md)' : 'var(--mantine-shadow-xs)',
                       opacity: dimmed ? 0.55 : 1,
-                      animation: isCorrectOption ? 'quest-option-pop 420ms ease-out' : 'none'
+                      animation: optionAnimation ?? 'none'
                     }}
                   >
                     <Group wrap="nowrap">
@@ -794,7 +817,7 @@ function QuestionScreen({
               flex: '1 1 220px',
               maxWidth: 320,
               border: `2px solid ${answeredCorrectly ? '#cadfae' : '#f3d3ba'}`,
-              animation: 'quest-feedback-rise 360ms cubic-bezier(0.22, 0.72, 0.15, 1)'
+              animation: feedback.feedbackPanelAnimation() ?? 'none'
             }}
           >
             <Group
@@ -816,17 +839,6 @@ function QuestionScreen({
                 >
                   {answeredCorrectly ? 'That is the one.' : 'Not quite.'}
                 </Text>
-                {/* No stored rationale/explanation text exists on Question
-                    anywhere in the schema, so this stays to the one thing
-                    we do have real data for: which option was right. */}
-                {!answeredCorrectly && correctOption && (
-                  <Text
-                    fz="sm"
-                    c="charcoal.7"
-                  >
-                    The correct answer: {correctOption.text}
-                  </Text>
-                )}
               </Stack>
             </Group>
           </Paper>
