@@ -32,6 +32,7 @@ function Profile() {
 
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +44,7 @@ function Profile() {
         if (!cancelled) setUser(synced);
       } catch (error) {
         console.error('Failed to load user', error);
+        if (!cancelled) setUserError('Failed to load your profile. Please refresh the page.');
       } finally {
         if (!cancelled) setUserLoading(false);
       }
@@ -205,6 +207,8 @@ function Profile() {
                   </Button>
                 </Group>
               </Stack>
+            ) : userError ? (
+              <Text fz="sm" c="red.7">{userError}</Text>
             ) : (
               <>
                 <Text
