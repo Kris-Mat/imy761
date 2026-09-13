@@ -101,6 +101,12 @@ const farmerImages: Record<number, string> = {
 // so it doesn't reuse ROAD_PIN_POSITIONS (an SVG-viewBox-specific coordinate
 // system built for a much taller hero). Cycles if there are ever more farms
 // than spots.
+//
+// The third spot's top was originally tuned far too small (24%, nearly
+// identical to the first spot despite sitting at a very different x), which
+// left the third farm (Willem, in the current 3-farm season) floating above
+// the hill instead of resting on it like the other two — confirmed against
+// a screenshot of the actual "My progress" card.
 const PROGRESS_PIN_SPOTS: { left: string; top: string; }[] = [
   {
     left: '16%', top: '24%'
@@ -109,7 +115,7 @@ const PROGRESS_PIN_SPOTS: { left: string; top: string; }[] = [
     left: '48%', top: '52%'
   },
   {
-    left: '80%', top: '26%'
+    left: '80%', top: '62%'
   },
   {
     left: '32%', top: '74%'

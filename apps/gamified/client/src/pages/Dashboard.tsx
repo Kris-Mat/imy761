@@ -56,13 +56,12 @@ const PIT_LAYERS: { category: QuestionCategory; soilColor: string; depth: string
 // hill — same "recede up and to the right" arrangement as QuestScene's
 // FARM_STATIONS, just re-tuned for this smaller card's own proportions.
 //
-// JourneyPanel's Paper has no fixed height (overflow:hidden clips at
-// whatever height the title/subtitle + the h=190 hill Box add up to,
-// roughly 260px) — the third slot's avatar+label previously extended a few
-// px past that, getting clipped at the bottom. Moved all three up, and
-// gave the third one a slightly larger gap from the second (22 rather than
-// the even 20 between the first two) so it settles further into the
-// slope's curve instead of sitting high/detached from it.
+// The third slot's yPct was originally tuned too small, leaving it floating
+// above the hill's curve instead of resting on it like the other two —
+// confirmed against a screenshot. Raised it well past the first attempt;
+// JourneyPanel's own Paper padding was given extra bottom room (see below)
+// specifically so this larger value doesn't get clipped by the card's
+// overflow:hidden the way it did before that padding existed.
 const JOURNEY_PINS: { xPct: number; yPct: number; }[] = [
   {
     xPct: 17, yPct: 12
@@ -443,7 +442,11 @@ function JourneyPanel({ farms, activeFarmId }: { farms: FarmProgress[]; activeFa
       radius="lg"
       shadow="md"
       style={{
-        padding: '26px 26px 0', overflow: 'hidden'
+        // Extra bottom padding (was 0) so the raised third pin (see
+        // JOURNEY_PINS) has room to sit on the curve without its
+        // avatar/label getting clipped by this same overflow:hidden, which
+        // still clips the decorative hill ellipse itself exactly as before.
+        padding: '26px 26px 36px', overflow: 'hidden'
       }}
     >
       <Title
