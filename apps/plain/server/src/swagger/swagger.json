@@ -83,6 +83,23 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"QuestionAttemptStatus": {
+				"properties": {
+					"questionId": {
+						"type": "number",
+						"format": "double"
+					},
+					"isCorrect": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"questionId",
+					"isCorrect"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"Achievement": {
 				"properties": {
 					"id": {
@@ -554,6 +571,30 @@
 			}
 		},
 		"/users/me/attempts": {
+			"get": {
+				"operationId": "GetMyAttempts",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/QuestionAttemptStatus"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": []
+			},
 			"post": {
 				"operationId": "SubmitAttempt",
 				"responses": {

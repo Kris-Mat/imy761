@@ -2,7 +2,7 @@ import { BaseApi } from "./base.api";
 import { type User, type AvatarConfig } from "../models/user.model";
 import { type UserStats } from "../models/user-stats.model";
 import { type FarmProgress } from "../models/farm.model";
-import { type AttemptResult } from "../models/attempt.model";
+import { type AttemptResult, type QuestionAttemptStatus } from "../models/attempt.model";
 import { type Achievement } from "../models/achievement.model";
 import { type StudentAnalytics } from "../models/admin.model";
 
@@ -55,6 +55,13 @@ class UsersApi extends BaseApi {
     return this.put<AvatarConfig>(
       `users/me/avatar`,
       { avatarConfig },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+  }
+
+  getMyAttempts(accessToken: string): Promise<QuestionAttemptStatus[]> {
+    return this.get<QuestionAttemptStatus[]>(
+      `users/me/attempts`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
   }

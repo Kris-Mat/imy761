@@ -25,9 +25,30 @@ function ChapterStatusIcon({ completed }: { completed: boolean; }) {
   );
 }
 
+// isCorrect is undefined when the question hasn't been attempted yet.
+function QuestionStatusIcon({ isCorrect }: { isCorrect: boolean | undefined; }) {
+  if (isCorrect === undefined) {
+    return (
+      <Icon
+        name="Circle"
+        size={18}
+        color="var(--mantine-color-gray-5)"
+      />
+    );
+  }
+  return (
+    <Icon
+      name={isCorrect ? 'CheckCircle' : 'XCircle'}
+      size={18}
+      weight="fill"
+      color={`var(--mantine-color-${isCorrect ? 'moss' : 'terracotta'}-6)`}
+    />
+  );
+}
+
 function Tests() {
   const navigate = useNavigate();
-  const { monoliths, loading, completedMonolithIds } = useContent();
+  const { monoliths, loading, completedMonolithIds, questionResults } = useContent();
 
   return (
     <Stack maw={1100} mx="auto">
@@ -66,13 +87,7 @@ function Tests() {
                         // overview, so a question at position `index` in
                         // monolith.questions is step `index + 1`.
                         onClick={() => navigate(`/tests/${monolith.id}?step=${index + 1}`)}
-                        leftSection={(
-                          <Icon
-                            name="Circle"
-                            size={18}
-                            color="var(--mantine-color-gray-5)"
-                          />
-                        )}
+                        leftSection={<QuestionStatusIcon isCorrect={questionResults.get(question.id)} />}
                         variant="subtle"
                       />
                     ))}
