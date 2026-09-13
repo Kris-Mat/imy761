@@ -18,6 +18,7 @@ import { categoryLabels } from '../lib/questionCategory';
 import { hasAttempted, hasFinished } from '../lib/questProgress';
 import MunsellChip from '../components/MunsellChip';
 import { useAnswerFeedback } from '../hooks/useAnswerFeedback';
+import { useTransitionEffect } from '../hooks/useTransitionEffect';
 import level1Pieter from '../assets/farmers/level-1-pieter.png';
 import level2Nomsa from '../assets/farmers/level-2-nomsa.png';
 import level3Willem from '../assets/farmers/level-3-willem.png';
@@ -512,6 +513,30 @@ const pipColor: Record<PipStatus, string> = {
   upcoming: 'var(--mantine-color-charcoal-3)'
 };
 
+// Only the current question's own pip ever transitions live within one
+// mounted QuestionScreen (submit flips it current -> correct/incorrect
+// without a remount) — every other pip in the row is fixed for the whole
+// mount, so this only ever fires for that one pip.
+function QuestionPip({ status, reducedMotion }: { status: PipStatus; reducedMotion: boolean; }) {
+  const justResolved = useTransitionEffect(
+    status,
+    (previous, next) => previous === 'current' && (next === 'correct' || next === 'incorrect'),
+    420
+  );
+  return (
+    <Box
+      w={status === 'current' ? 30 : 13}
+      h={13}
+      style={{
+        borderRadius: 999,
+        background: pipColor[status],
+        transition: 'width 300ms ease, background 300ms ease',
+        animation: justResolved && !reducedMotion ? 'quest-pip-fill 420ms ease-out' : 'none'
+      }}
+    />
+  );
+}
+
 function ProgressPips({ questions, currentQuestionId, currentRevealed, currentIsCorrect, farm }: {
   questions: Question[];
   currentQuestionId: number;
@@ -519,20 +544,16 @@ function ProgressPips({ questions, currentQuestionId, currentRevealed, currentIs
   currentIsCorrect: boolean;
   farm: FarmProgress;
 }) {
+  const reducedMotion = useReducedMotion(false, { getInitialValueInEffect: false });
   return (
     <Group gap={7}>
       {questions.map((q) => {
         const status = pipStatusFor(q, q.id === currentQuestionId, currentRevealed, currentIsCorrect, farm);
         return (
-          <Box
+          <QuestionPip
             key={q.id}
-            w={status === 'current' ? 30 : 13}
-            h={13}
-            style={{
-              borderRadius: 999,
-              background: pipColor[status],
-              transition: 'width 300ms ease, background 300ms ease'
-            }}
+            status={status}
+            reducedMotion={reducedMotion}
           />
         );
       })}

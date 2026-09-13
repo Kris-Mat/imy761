@@ -103,6 +103,71 @@ body {
   }
 }
 
+/* A day-strip pip filling in (Quests.tsx's DayCard, and QuestRunner's
+   in-question ProgressPips) — a brief scale bump on top of the plain
+   background-color transition already set inline, so a pip resolving reads
+   as a small "fill" event rather than a static recolor. */
+@keyframes quest-pip-fill {
+  0% {
+    transform: scaleY(1);
+  }
+  45% {
+    transform: scaleY(1.4);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* A day card settling from active to done — the same moss/success green as
+   quest-option-bloom, expanding and fading before the card's normal resting
+   shadow (set inline, per selected/hovered state) takes back over. */
+@keyframes quest-day-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 142, 60, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 22px rgba(56, 142, 60, 0);
+  }
+}
+
+/* Streak number ticking up — a quick flicker/pop, not a full digit-roll,
+   since the value is shown as plain text rather than individual digit
+   slots. */
+/* The flame icon dropping into each streak-day box in Dashboard's week
+   strip — pops in with a small scale/opacity overshoot rather than just
+   appearing, staggered per-day so the row reads left-to-right instead of
+   flashing in all at once. */
+@keyframes quest-flame-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) translateY(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes quest-streak-flicker {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.22);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* The option row's own hover nudge — inert once QuestionScreen sets
    pointer-events:none on a revealed/unanswered row, since a element that
    can't receive pointer events can't trigger :hover either. */
